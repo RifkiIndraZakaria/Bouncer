@@ -41,14 +41,36 @@ aktif.
    keamanan (Row Level Security) yang memastikan setiap pemain hanya bisa
    mengubah datanya sendiri, sementara leaderboard bisa dibaca siapa saja.
 
-### c. Aktifkan Anonymous Sign-In
+### c. Nonaktifkan "Confirm email" (PENTING, sering jadi sebab gagal daftar)
 
-Game ini memakai login anonim (tanpa perlu email/password) supaya pemain
-bisa langsung main, sambil tetap punya identitas unik untuk save & leaderboard.
+Game ini memakai akun **email + password** biasa (`supabase.auth.signUp` /
+`signInWithPassword`). Secara default, Supabase **mewajibkan konfirmasi
+email** sebelum akun bisa dipakai — dan layanan pengiriman email bawaan
+Supabase (tanpa SMTP kustom) punya **rate limit sangat kecil** (hanya
+beberapa email/jam). Ini yang biasanya membuat pendaftaran gagal dengan
+error seperti `over_email_send_rate_limit` atau akun tidak bisa login karena
+email konfirmasi tidak pernah sampai.
 
-1. Di dashboard, buka **Authentication** → **Sign In / Providers**.
-2. Cari **Anonymous Sign-In** dan aktifkan (toggle **Enable**).
+Untuk game sederhana seperti ini, cara termudah adalah **menonaktifkan
+verifikasi email** sepenuhnya:
+
+1. Di dashboard project, buka **Authentication** → **Providers** (atau
+   **Sign In / Providers** pada dashboard versi lama) → klik **Email**.
+2. Cari opsi **"Confirm email"** dan **matikan** (set ke *Disabled/Off*).
 3. Simpan.
+
+Setelah ini, `signUp()` langsung mengembalikan sesi aktif tanpa perlu
+membuka email apapun, sehingga tombol **Daftar Akun** akan langsung berhasil
+masuk.
+
+> Ingin tetap memakai verifikasi email asli? Kamu bisa membiarkan "Confirm
+> email" aktif, tapi sebaiknya hubungkan **SMTP kustom** (Project Settings →
+> Auth → SMTP Settings, misalnya pakai Resend/SendGrid) agar tidak kena
+> limit bawaan Supabase.
+
+Juga pastikan pemain mendaftar dengan **domain email asli** (gmail.com,
+outlook.com, dst) — Supabase menolak beberapa domain contoh/placeholder
+seperti `example.com` atau `test.com` dengan error `email_address_invalid`.
 
 ### d. Ambil URL & anon key
 
@@ -85,15 +107,19 @@ bisa langsung main, sambil tetap punya identitas unik untuk save & leaderboard.
 
 ### Bagaimana cara kerjanya?
 
-- Saat pertama kali membuka tab Cloud Save, game membuat sesi **anonymous
-  auth** di Supabase (satu UUID unik per browser/perangkat, disimpan otomatis
-  oleh Supabase di localStorage).
+- Di tab **Cloud Save**, pemain **Daftar Akun** (email + password, minimal 6
+  karakter) atau **Masuk** jika sudah punya akun. Akun yang sama bisa dipakai
+  di perangkat lain mana pun untuk memuat progres yang sama.
+- Setelah masuk, pemain mengatur **nama pemain** (3-20 karakter) yang akan
+  tampil di leaderboard.
 - Skor leaderboard = **total uang yang pernah dihasilkan** sepanjang
   permainan (bukan saldo saat ini yang bisa berkurang karena dibelanjakan).
 - Data save lengkap (uang, upgrade, posisi paddle, dll) disimpan sebagai JSON
   di tabel `saves`, hanya bisa dibaca/ditulis oleh pemiliknya sendiri.
 - Autosave lokal berjalan terus-menerus; autosave ke cloud berjalan tiap 60
-  detik selama pemain sudah mengatur nama.
+  detik selama pemain sudah login & mengatur nama.
+- Tombol **Keluar Akun** akan sign-out dari Supabase; progres lokal di
+  perangkat tetap aman meski sudah keluar.
 
 ---
 

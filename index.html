@@ -1929,6 +1929,33 @@
           if (inputEl) inputEl.value = cloudUsername;
         }
 
+        function mapAuthError(error) {
+          const code = error.code || error.error_code || "";
+          const msg = (error.message || "").toLowerCase();
+          if (code === "email_address_invalid" || msg.includes("invalid")) {
+            return "Alamat email tidak valid. Gunakan email asli (Gmail/Outlook/dll), bukan domain contoh seperti example.com/test.com.";
+          }
+          if (
+            code === "over_email_send_rate_limit" ||
+            msg.includes("rate limit")
+          ) {
+            return "Terlalu banyak percobaan kirim email konfirmasi (limit bawaan Supabase sangat kecil). Nonaktifkan 'Confirm email' di dashboard Supabase (Authentication > Providers > Email) agar bisa daftar tanpa verifikasi email, lalu coba lagi.";
+          }
+          if (code === "user_already_exists" || msg.includes("already registered")) {
+            return "Email ini sudah terdaftar. Coba tombol Masuk.";
+          }
+          if (
+            code === "email_not_confirmed" ||
+            msg.includes("email not confirmed")
+          ) {
+            return "Email belum dikonfirmasi. Cek inbox/spam, atau matikan 'Confirm email' di dashboard Supabase supaya tidak perlu verifikasi.";
+          }
+          if (code === "invalid_credentials" || msg.includes("invalid login")) {
+            return "Email atau password salah.";
+          }
+          return error.message || "Terjadi kesalahan tidak diketahui.";
+        }
+
         async function registerAccount(email, password) {
           if (!sb) {
             showToast("Cloud save belum dikonfigurasi.");
@@ -1936,7 +1963,7 @@
           }
           const { data, error } = await sb.auth.signUp({ email, password });
           if (error) {
-            showToast("Gagal mendaftar: " + error.message);
+            showToast("Gagal mendaftar: " + mapAuthError(error));
             return;
           }
           if (data.session && data.user) {
@@ -1944,6 +1971,10 @@
             await fetchProfileUsername(cloudUser);
             showToast("Akun berhasil dibuat & masuk!");
             updateCloudPanel();
+          } else if (data.user && !data.session) {
+            showToast(
+              "Akun dibuat, tapi butuh konfirmasi email untuk masuk. Cek inbox, atau matikan 'Confirm email' di dashboard Supabase agar bisa langsung masuk.",
+            );
           } else {
             showToast(
               "Akun dibuat. Cek email untuk konfirmasi, lalu tekan Masuk.",
@@ -1961,7 +1992,7 @@
             password,
           });
           if (error) {
-            showToast("Gagal masuk: " + error.message);
+            showToast("Gagal masuk: " + mapAuthError(error));
             return;
           }
           cloudUser = data.user;
