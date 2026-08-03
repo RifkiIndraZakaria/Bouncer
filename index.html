@@ -2047,7 +2047,16 @@
           }
           cloudUser = data.user;
           await fetchProfileUsername(cloudUser);
-          showToast("Berhasil masuk!");
+          // Selalu tarik progres terbaru dari cloud saat login, supaya
+          // device ini tidak melanjutkan dari state lokal yang usang
+          // (inilah sumber utama bug "bola hilang / uang tidak sinkron"
+          // saat 1 akun dipakai di 2 device berbeda).
+          const loaded = await cloudLoad({ silent: true });
+          showToast(
+            loaded
+              ? "Berhasil masuk! Progres terbaru dari cloud dimuat."
+              : "Berhasil masuk!",
+          );
           updateCloudPanel();
         }
 
@@ -2075,24 +2084,70 @@
           return true;
         }
 
-        async function cloudSave() {
+        // Timestamp (ISO string) dari versi save cloud terakhir yang
+        // *diketahui* oleh device ini (baik karena baru dimuat, maupun
+        // baru berhasil disimpan). Dipakai untuk mendeteksi jika ada
+        // device lain yang menyimpan progres lebih baru sejak itu, supaya
+        // kita tidak menimpa progres tersebut secara diam-diam.
+        let lastKnownCloudUpdatedAt = null;
+
+        async function cloudSave({ silent = false } = {}) {
           if (!sb) {
-            showToast("Cloud save belum dikonfigurasi.");
+            if (!silent) showToast("Cloud save belum dikonfigurasi.");
             return;
           }
           if (!cloudUser) {
-            showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
+            if (!silent)
+              showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
             return;
           }
           if (!cloudUsername) {
-            showToast("Set nama pemain dulu di tab Cloud Save.");
+            if (!silent) showToast("Set nama pemain dulu di tab Cloud Save.");
             return;
           }
+
+          // Cek dulu versi terbaru di cloud sebelum menimpa. Jika ada
+          // perubahan dari device lain yang belum kita lihat, muat versi
+          // itu dulu alih-alih menimpanya dengan data device ini yang lebih
+          // usang (mencegah bola/uang "hilang" karena tertimpa).
+          const { data: existing, error: checkError } = await sb
+            .from("saves")
+            .select("data, updated_at")
+            .eq("user_id", cloudUser.id)
+            .maybeSingle();
+          if (checkError) {
+            if (!silent) showToast("Gagal memeriksa data cloud.");
+            return;
+          }
+          const conflict =
+            existing &&
+            lastKnownCloudUpdatedAt &&
+            new Date(existing.updated_at) > new Date(lastKnownCloudUpdatedAt);
+          if (conflict) {
+            applyState(existing.data);
+            lastKnownCloudUpdatedAt = existing.updated_at;
+            saveLocal();
+            showToast(
+              "Progres lebih baru ditemukan dari device lain, dimuat otomatis agar tidak ada yang hilang. Silakan lanjutkan main dan simpan lagi.",
+            );
+            updateCloudPanel();
+            return;
+          }
+
           const nowIso = new Date().toISOString();
           const level =
             Math.floor(
               (ballsBought + profitBought + paddlesBought + mergesBought) / 5,
             ) + 1;
+          const { data: existingLb } = await sb
+            .from("leaderboard")
+            .select("score")
+            .eq("user_id", cloudUser.id)
+            .maybeSingle();
+          const finalScore = Math.max(
+            Math.floor(totalEarned),
+            existingLb && existingLb.score ? existingLb.score : 0,
+          );
           const { error: e1 } = await sb.from("saves").upsert({
             user_id: cloudUser.id,
             data: serializeState(),
@@ -2101,44 +2156,48 @@
           const { error: e2 } = await sb.from("leaderboard").upsert({
             user_id: cloudUser.id,
             username: cloudUsername,
-            score: Math.floor(totalEarned),
+            score: finalScore,
             level,
             updated_at: nowIso,
           });
           if (e1 || e2) {
-            showToast("Gagal menyimpan ke cloud.");
+            if (!silent) showToast("Gagal menyimpan ke cloud.");
             return;
           }
+          lastKnownCloudUpdatedAt = nowIso;
           lastCloudSyncAt = Date.now();
-          showToast("Progres tersimpan ke cloud!");
+          if (!silent) showToast("Progres tersimpan ke cloud!");
           updateCloudPanel();
         }
 
-        async function cloudLoad() {
+        async function cloudLoad({ silent = false } = {}) {
           if (!sb) {
-            showToast("Cloud save belum dikonfigurasi.");
-            return;
+            if (!silent) showToast("Cloud save belum dikonfigurasi.");
+            return false;
           }
           if (!cloudUser) {
-            showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
-            return;
+            if (!silent)
+              showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
+            return false;
           }
           const { data, error } = await sb
             .from("saves")
-            .select("data")
+            .select("data, updated_at")
             .eq("user_id", cloudUser.id)
             .maybeSingle();
           if (error) {
-            showToast("Gagal memuat save dari cloud.");
-            return;
+            if (!silent) showToast("Gagal memuat save dari cloud.");
+            return false;
           }
           if (!data) {
-            showToast("Belum ada save di cloud untuk akun ini.");
-            return;
+            if (!silent) showToast("Belum ada save di cloud untuk akun ini.");
+            return false;
           }
           applyState(data.data);
+          lastKnownCloudUpdatedAt = data.updated_at;
           saveLocal();
-          showToast("Save dari cloud berhasil dimuat!");
+          if (!silent) showToast("Save dari cloud berhasil dimuat!");
+          return true;
         }
 
         async function fetchLeaderboard() {
@@ -2282,7 +2341,7 @@
         // sinkron ke cloud berkala jika sudah punya nama pemain.
         setInterval(() => {
           saveLocal();
-          if (sb && cloudUser && cloudUsername) cloudSave();
+          if (sb && cloudUser && cloudUsername) cloudSave({ silent: true });
         }, 60000);
         window.addEventListener("beforeunload", saveLocal);
         document.addEventListener("visibilitychange", () => {
@@ -2294,6 +2353,11 @@
             if (session && session.user) {
               cloudUser = session.user;
               await fetchProfileUsername(cloudUser);
+              // Sesi login tersimpan dari sebelumnya (mis. device ini
+              // sudah pernah login akun ini) -> tarik progres terbaru dari
+              // cloud dulu sebelum melanjutkan, supaya selalu sinkron
+              // dengan device lain yang mungkin menyimpan progres baru.
+              await cloudLoad({ silent: true });
             }
             updateCloudPanel();
           });
