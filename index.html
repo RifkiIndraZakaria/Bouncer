@@ -1024,31 +1024,64 @@
               <div class="htp-text" style="margin-bottom: 14px">
                 <b>Cloud Save & Sinkronisasi</b>
                 <p>
-                  Simpan progresmu ke akun agar bisa dilanjutkan di perangkat
-                  lain, dan tampil di leaderboard global. Progres tetap otomatis
-                  tersimpan di perangkat ini meski tidak memakai fitur ini.
+                  Buat akun dengan email & password agar progresmu bisa
+                  disinkronkan dan dilanjutkan di perangkat lain manapun (PC,
+                  Android, dll), serta tampil di leaderboard global. Progres
+                  tetap otomatis tersimpan di perangkat ini meski tidak memakai
+                  fitur ini.
                 </p>
               </div>
               <div id="cloudStatus" class="cloud-status">Memuat status...</div>
-              <div class="cloud-form">
-                <input
-                  id="cloudUsernameInput"
-                  class="cloud-input"
-                  type="text"
-                  maxlength="20"
-                  placeholder="Nama pemain (3-20 karakter)"
-                />
-                <button id="btnSetUsername" class="cloud-btn">
-                  Simpan Nama
-                </button>
+
+              <div id="authSection">
+                <div class="cloud-form">
+                  <input
+                    id="authEmailInput"
+                    class="cloud-input"
+                    type="email"
+                    placeholder="Email"
+                    autocomplete="username"
+                  />
+                </div>
+                <div class="cloud-form">
+                  <input
+                    id="authPasswordInput"
+                    class="cloud-input"
+                    type="password"
+                    placeholder="Password (min. 6 karakter)"
+                    autocomplete="current-password"
+                  />
+                </div>
+                <div class="cloud-actions">
+                  <button id="btnRegister" class="cloud-btn primary">
+                    Daftar Akun
+                  </button>
+                  <button id="btnLogin" class="cloud-btn">Masuk</button>
+                </div>
               </div>
-              <div class="cloud-actions">
-                <button id="btnCloudSave" class="cloud-btn primary">
-                  ☁ Simpan ke Cloud
-                </button>
-                <button id="btnCloudLoad" class="cloud-btn">
-                  ⭯ Muat dari Cloud
-                </button>
+
+              <div id="accountSection" style="display: none">
+                <div class="cloud-form">
+                  <input
+                    id="cloudUsernameInput"
+                    class="cloud-input"
+                    type="text"
+                    maxlength="20"
+                    placeholder="Nama pemain (3-20 karakter)"
+                  />
+                  <button id="btnSetUsername" class="cloud-btn">
+                    Simpan Nama
+                  </button>
+                </div>
+                <div class="cloud-actions">
+                  <button id="btnCloudSave" class="cloud-btn primary">
+                    ☁ Simpan ke Cloud
+                  </button>
+                  <button id="btnCloudLoad" class="cloud-btn">
+                    ⭯ Muat dari Cloud
+                  </button>
+                  <button id="btnLogout" class="cloud-btn">Keluar Akun</button>
+                </div>
               </div>
             </div>
 
@@ -1691,19 +1724,19 @@
             changes: [
               {
                 type: "added",
-                text: "Rilis awal: papan pantul bola, 4 paddle di tiap sisi, sistem uang.",
+                text: "Release",
+              },
+              {
+                type: "added",
+                text: "Leaderboard",
+              },
+              {
+                type: "added",
+                text: "Cloud Save",
               },
               {
                 type: "fixed",
-                text: "Kompatibilitas layout portrait untuk layar HP/Android.",
-              },
-              {
-                type: "added",
-                text: "Menu diubah menjadi layout sidebar (kiri) di desktop.",
-              },
-              {
-                type: "added",
-                text: "VFX: Partikel dan kilatan putih ditambahkan saat paddle memantulkan bola.",
+                text: "Device compatibility issues",
               },
             ],
           },
@@ -1881,31 +1914,77 @@
           }
         }
 
-        async function ensureCloudUser() {
-          if (!sb) return null;
-          if (cloudUser) return cloudUser;
-          const {
-            data: { session },
-          } = await sb.auth.getSession();
-          if (session && session.user) {
-            cloudUser = session.user;
-            return cloudUser;
+        async function fetchProfileUsername(user) {
+          if (!user) return;
+          const { data, error } = await sb
+            .from("profiles")
+            .select("username")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (!error && data && data.username) {
+            cloudUsername = data.username;
+            localStorage.setItem("pb_username", cloudUsername);
           }
-          const { data, error } = await sb.auth.signInAnonymously();
+          const inputEl = document.getElementById("cloudUsernameInput");
+          if (inputEl) inputEl.value = cloudUsername;
+        }
+
+        async function registerAccount(email, password) {
+          if (!sb) {
+            showToast("Cloud save belum dikonfigurasi.");
+            return;
+          }
+          const { data, error } = await sb.auth.signUp({ email, password });
           if (error) {
-            console.error("Supabase anonymous sign-in failed:", error);
-            return null;
+            showToast("Gagal mendaftar: " + error.message);
+            return;
+          }
+          if (data.session && data.user) {
+            cloudUser = data.user;
+            await fetchProfileUsername(cloudUser);
+            showToast("Akun berhasil dibuat & masuk!");
+            updateCloudPanel();
+          } else {
+            showToast(
+              "Akun dibuat. Cek email untuk konfirmasi, lalu tekan Masuk.",
+            );
+          }
+        }
+
+        async function loginAccount(email, password) {
+          if (!sb) {
+            showToast("Cloud save belum dikonfigurasi.");
+            return;
+          }
+          const { data, error } = await sb.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) {
+            showToast("Gagal masuk: " + error.message);
+            return;
           }
           cloudUser = data.user;
-          return cloudUser;
+          await fetchProfileUsername(cloudUser);
+          showToast("Berhasil masuk!");
+          updateCloudPanel();
+        }
+
+        async function logoutAccount() {
+          if (!sb) return;
+          await sb.auth.signOut();
+          cloudUser = null;
+          cloudUsername = "";
+          localStorage.removeItem("pb_username");
+          showToast("Berhasil keluar dari akun.");
+          updateCloudPanel();
         }
 
         async function setCloudUsername(name) {
-          const user = await ensureCloudUser();
-          if (!user) return false;
+          if (!cloudUser) return false;
           const { error } = await sb
             .from("profiles")
-            .upsert({ id: user.id, username: name });
+            .upsert({ id: cloudUser.id, username: name });
           if (error) {
             showToast("Gagal menyimpan nama: " + error.message);
             return false;
@@ -1920,13 +1999,12 @@
             showToast("Cloud save belum dikonfigurasi.");
             return;
           }
-          if (!cloudUsername) {
-            showToast("Set nama pemain dulu di tab Cloud Save.");
+          if (!cloudUser) {
+            showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
             return;
           }
-          const user = await ensureCloudUser();
-          if (!user) {
-            showToast("Gagal terhubung ke server.");
+          if (!cloudUsername) {
+            showToast("Set nama pemain dulu di tab Cloud Save.");
             return;
           }
           const nowIso = new Date().toISOString();
@@ -1935,12 +2013,12 @@
               (ballsBought + profitBought + paddlesBought + mergesBought) / 5,
             ) + 1;
           const { error: e1 } = await sb.from("saves").upsert({
-            user_id: user.id,
+            user_id: cloudUser.id,
             data: serializeState(),
             updated_at: nowIso,
           });
           const { error: e2 } = await sb.from("leaderboard").upsert({
-            user_id: user.id,
+            user_id: cloudUser.id,
             username: cloudUsername,
             score: Math.floor(totalEarned),
             level,
@@ -1960,15 +2038,14 @@
             showToast("Cloud save belum dikonfigurasi.");
             return;
           }
-          const user = await ensureCloudUser();
-          if (!user) {
-            showToast("Gagal terhubung ke server.");
+          if (!cloudUser) {
+            showToast("Silakan daftar/masuk akun dulu di tab Cloud Save.");
             return;
           }
           const { data, error } = await sb
             .from("saves")
             .select("data")
-            .eq("user_id", user.id)
+            .eq("user_id", cloudUser.id)
             .maybeSingle();
           if (error) {
             showToast("Gagal memuat save dari cloud.");
@@ -2020,23 +2097,33 @@
 
         function updateCloudPanel() {
           const statusEl = document.getElementById("cloudStatus");
+          const authSection = document.getElementById("authSection");
+          const accountSection = document.getElementById("accountSection");
           if (!sb) {
             statusEl.textContent =
               "Cloud save tidak aktif (Supabase belum dikonfigurasi). Progres tetap tersimpan otomatis di perangkat ini.";
+            authSection.style.display = "none";
+            accountSection.style.display = "none";
             return;
           }
-          if (cloudUsername) {
+          if (cloudUser) {
+            authSection.style.display = "none";
+            accountSection.style.display = "block";
             statusEl.textContent =
-              'Masuk sebagai "' +
-              cloudUsername +
-              '"' +
+              "Masuk sebagai " +
+              cloudUser.email +
+              (cloudUsername
+                ? ' · nama pemain "' + cloudUsername + '"'
+                : " · belum set nama pemain") +
               (lastCloudSyncAt
                 ? " · sinkron terakhir " +
                   new Date(lastCloudSyncAt).toLocaleTimeString()
                 : " · belum pernah sinkron");
           } else {
+            authSection.style.display = "block";
+            accountSection.style.display = "none";
             statusEl.textContent =
-              "Belum ada nama pemain. Set nama untuk mulai cloud save & tampil di leaderboard.";
+              "Daftar atau masuk dengan email & password yang sama di semua perangkat agar progres bisa disinkronkan.";
           }
         }
 
@@ -2054,6 +2141,10 @@
               showToast("Cloud save belum dikonfigurasi.");
               return;
             }
+            if (!cloudUser) {
+              showToast("Silakan daftar/masuk akun dulu.");
+              return;
+            }
             const ok = await setCloudUsername(val);
             if (ok) {
               showToast("Nama pemain disimpan: " + val);
@@ -2069,6 +2160,39 @@
         document
           .getElementById("btnRefreshLb")
           .addEventListener("click", fetchLeaderboard);
+        document
+          .getElementById("btnRegister")
+          .addEventListener("click", async () => {
+            const email = document
+              .getElementById("authEmailInput")
+              .value.trim();
+            const password = document.getElementById("authPasswordInput").value;
+            if (!email || !password) {
+              showToast("Isi email dan password dulu.");
+              return;
+            }
+            if (password.length < 6) {
+              showToast("Password minimal 6 karakter.");
+              return;
+            }
+            await registerAccount(email, password);
+          });
+        document
+          .getElementById("btnLogin")
+          .addEventListener("click", async () => {
+            const email = document
+              .getElementById("authEmailInput")
+              .value.trim();
+            const password = document.getElementById("authPasswordInput").value;
+            if (!email || !password) {
+              showToast("Isi email dan password dulu.");
+              return;
+            }
+            await loginAccount(email, password);
+          });
+        document
+          .getElementById("btnLogout")
+          .addEventListener("click", logoutAccount);
 
         // Load progres tersimpan sebelum game mulai berjalan
         loadLocal();
@@ -2077,7 +2201,7 @@
         // sinkron ke cloud berkala jika sudah punya nama pemain.
         setInterval(() => {
           saveLocal();
-          if (sb && cloudUsername) cloudSave();
+          if (sb && cloudUser && cloudUsername) cloudSave();
         }, 60000);
         window.addEventListener("beforeunload", saveLocal);
         document.addEventListener("visibilitychange", () => {
@@ -2085,7 +2209,13 @@
         });
 
         if (sb) {
-          ensureCloudUser().then(() => updateCloudPanel());
+          sb.auth.getSession().then(async ({ data: { session } }) => {
+            if (session && session.user) {
+              cloudUser = session.user;
+              await fetchProfileUsername(cloudUser);
+            }
+            updateCloudPanel();
+          });
         } else {
           updateCloudPanel();
         }
