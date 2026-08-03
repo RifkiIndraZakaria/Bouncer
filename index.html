@@ -975,8 +975,8 @@
               <div class="htp-text" style="margin-bottom: 14px">
                 <b>Leaderboard Global</b>
                 <p>
-                  Peringkat pemain berdasarkan total uang yang pernah
-                  dihasilkan sepanjang permainan (bukan uang yang tersisa).
+                  Peringkat pemain berdasarkan total uang yang pernah dihasilkan
+                  sepanjang permainan (bukan uang yang tersisa).
                 </p>
               </div>
               <div id="leaderboardList">
@@ -996,9 +996,8 @@
                 <b>Cloud Save & Sinkronisasi</b>
                 <p>
                   Simpan progresmu ke akun agar bisa dilanjutkan di perangkat
-                  lain, dan tampil di leaderboard global. Progres tetap
-                  otomatis tersimpan di perangkat ini meski tidak memakai
-                  fitur ini.
+                  lain, dan tampil di leaderboard global. Progres tetap otomatis
+                  tersimpan di perangkat ini meski tidak memakai fitur ini.
                 </p>
               </div>
               <div id="cloudStatus" class="cloud-status">Memuat status...</div>
@@ -1070,8 +1069,9 @@
          Lihat README.md / supabase/schema.sql untuk panduan setup.
     ==================================================== -->
     <script>
-      window.SUPABASE_URL = "";
-      window.SUPABASE_ANON_KEY = "";
+      window.SUPABASE_URL = "https://bchwkrttbplnntezdoti.supabase.co";
+      window.SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjaHdrcnR0YnBsbm50ZXpkb3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NTEyNjIsImV4cCI6MjEwMTMyNzI2Mn0.7Ty8gCighi9ojnD5aMzax62f-ige160pPmeJ4N-DF5Y";
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -1934,9 +1934,11 @@
             Math.floor(
               (ballsBought + profitBought + paddlesBought + mergesBought) / 5,
             ) + 1;
-          const { error: e1 } = await sb
-            .from("saves")
-            .upsert({ user_id: user.id, data: serializeState(), updated_at: nowIso });
+          const { error: e1 } = await sb.from("saves").upsert({
+            user_id: user.id,
+            data: serializeState(),
+            updated_at: nowIso,
+          });
           const { error: e2 } = await sb.from("leaderboard").upsert({
             user_id: user.id,
             username: cloudUsername,
