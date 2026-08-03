@@ -489,7 +489,7 @@
       .tab-panels {
         flex: 1;
         padding: 20px;
-        overflow-y: auto;
+        overflow-y: hidden;
       }
       .tab-panel {
         display: none;
@@ -606,6 +606,26 @@
         line-height: 1.7;
         padding-left: 2px;
       }
+      .upgrade-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        margin: 6px 0;
+      }
+
+      /* Nama Upgrade */
+      .upgrade-item b {
+        color: #e8e8ee;
+        font-size: 12.5px;
+        min-width: 100px;
+      }
+
+      /* Rincian */
+      .upgrade-item span {
+        color: var(--text-dim);
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
       .credit-block {
         display: flex;
         align-items: center;
@@ -617,15 +637,19 @@
         border-bottom: none;
       }
       .credit-avatar {
-        width: 52px;
-        height: 52px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
-        background: #0d0d14;
-        border: 1px solid var(--border);
+        overflow: hidden;
+        border: 2px solid #f2b60c;
         flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      }
+
+      .credit-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
       }
       .credit-name {
         font-weight: 800;
@@ -922,9 +946,8 @@
                 <div class="htp-text">
                   <b>1. Jatuhkan Bola</b>
                   <p>
-                    Klik di area papan untuk menjatuhkan bola baru, selama stok
-                    "Available Balls" masih ada. Bola akan memantul sendiri ke
-                    segala arah.
+                    Klik di area papan untuk menjatuhkan bola baru. Selama masih
+                    memiliki bola yang belum di gunakan
                   </p>
                 </div>
               </div>
@@ -951,9 +974,8 @@
                 <div class="htp-text">
                   <b>2. Hasilkan Uang dari Paddle</b>
                   <p>
-                    Saat bola menabrak paddle (bar kuning), kamu dapat uang =
-                    nilai bola × nilai paddle. Menabrak dinding kosong tidak
-                    menghasilkan apa-apa.
+                    Saat bola menabrak paddle (bar kuning), kamu dapat uang.
+                    Menabrak dinding tidak menghasilkan apa-apa.
                   </p>
                 </div>
               </div>
@@ -982,9 +1004,8 @@
                 <div class="htp-text">
                   <b>3. Gerakkan Paddle</b>
                   <p>
-                    Drag paddle untuk memindahkannya secara manual. Klik singkat
-                    untuk mengaktifkan/menonaktifkan mode Auto-Move (bergaris
-                    tepi toska).
+                    Drag paddle untuk menggerakkan manual. Klik untuk beralih
+                    mode Auto-Move.
                   </p>
                 </div>
               </div>
@@ -1012,14 +1033,31 @@
                 </div>
                 <div class="htp-text">
                   <b>4. Belanja Upgrade</b>
-                  <p>
-                    Pakai uang untuk beli
-                    <b style="color: #e8e8ee">Add Ball</b> (tambah stok bola),
-                    <b style="color: #e8e8ee">Ball Profit</b> (nilai bola x2),
-                    <b style="color: #e8e8ee">Add Paddle</b> (paddle baru), atau
-                    <b style="color: #e8e8ee">Merge Paddles</b> (gabung dua
-                    paddle nilai sama di sisi sama jadi satu lebih kuat).
-                  </p>
+
+                  <p>Pakai uang untuk beli</p>
+
+                  <div class="upgrade-item">
+                    <b>Add Ball</b>
+                    <span>: Tambah stok bola</span>
+                  </div>
+
+                  <div class="upgrade-item">
+                    <b>Ball Profit</b>
+                    <span>: Nilai bola x2</span>
+                  </div>
+
+                  <div class="upgrade-item">
+                    <b>Add Paddle</b>
+                    <span>: Paddle baru</span>
+                  </div>
+
+                  <div class="upgrade-item">
+                    <b>Merge Paddles</b>
+                    <span
+                      >: Gabung dua paddle nilai dan sisi yang sama jadi
+                      satu</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
@@ -1029,10 +1067,9 @@
                 <b>Cloud Save & Sinkronisasi</b>
                 <p>
                   Buat akun dengan email & password agar progresmu bisa
-                  disinkronkan dan dilanjutkan di perangkat lain manapun (PC,
-                  Android, dll), serta tampil di leaderboard global. Progres
-                  tetap otomatis tersimpan di perangkat ini meski tidak memakai
-                  fitur ini.
+                  disinkronkan dan dilanjutkan di perangkat lain, serta tampil
+                  di leaderboard global. Progres tetap otomatis tersimpan di
+                  perangkat ini meski tidak login.
                 </p>
               </div>
               <div id="cloudStatus" class="cloud-status">Memuat status...</div>
@@ -1096,27 +1133,15 @@
             <div class="tab-panel" id="panel-credit">
               <div class="credit-block">
                 <div class="credit-avatar">
-                  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-                    <circle
-                      cx="13"
-                      cy="9"
-                      r="5"
-                      stroke="#f2b60c"
-                      stroke-width="2"
-                    />
-                    <path
-                      d="M3 23c0-6 5-9 10-9s10 3 10 9"
-                      stroke="#f2b60c"
-                      stroke-width="2"
-                      fill="none"
-                    />
-                  </svg>
+                  <img src="PP.png" alt="Profile" />
                 </div>
+
                 <div>
                   <div class="credit-name" id="creditName">-</div>
                   <div class="credit-role" id="creditRole">-</div>
                 </div>
               </div>
+
               <div style="height: 14px"></div>
               <div class="social-list" id="socialList"></div>
             </div>
@@ -1766,9 +1791,15 @@
         }
 
         const creditData = {
-          name: "Nama Pembuat Game",
+          name: "Scarrotles",
           role: "Game Developer",
-          socials: [{ label: "YouTube", url: "https://youtube.com/@username" }],
+          socials: [
+            { label: "YouTube", url: "https://youtube.com/@scarrotles" },
+            {
+              label: "Instagram",
+              url: "https://instagram.com/scarrotles.work",
+            },
+          ],
         };
 
         function renderCredit() {
