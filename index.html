@@ -1,0 +1,2106 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Paddle Bounce Idle</title>
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --panel: #15151d;
+        --panel2: #1b1b26;
+        --border: #2a2a38;
+        --gold: #f2b60c;
+        --gold-dim: #8a6a1a;
+        --text: #e8e8ee;
+        --text-dim: #8a8a9a;
+        --danger: #ff5c5c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Arial, sans-serif;
+        overflow: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: none;
+      }
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        padding: 14px 18px;
+        gap: 12px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stat-label {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--text-dim);
+        font-weight: 700;
+      }
+      .stat-value {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .money {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--gold);
+        letter-spacing: 1px;
+      }
+      .levelbadge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 18px;
+        font-weight: 800;
+        font-size: 16px;
+        position: relative;
+        overflow: hidden;
+        min-width: 150px;
+        justify-content: center;
+      }
+      .levelbadge .fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, #3a3a50, #55556e);
+        z-index: 0;
+      }
+      .levelbadge span {
+        position: relative;
+        z-index: 1;
+      }
+
+      .main {
+        flex: 1;
+        display: flex;
+        gap: 18px;
+        min-height: 0;
+      }
+      .board-wrap {
+        flex: 1;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #08080c;
+        overflow: hidden;
+      }
+      #board {
+        display: block;
+        border: 2px dashed #3a3a48;
+        border-radius: 10px;
+        background: radial-gradient(ellipse at center, #101018 0%, #0a0a10 80%);
+        cursor: crosshair;
+      }
+      .hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #3d3d4a;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        pointer-events: none;
+        line-height: 1.6;
+        padding: 0 20px;
+      }
+
+      .panel {
+        width: 340px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow-y: auto;
+      }
+      .card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        transition:
+          border-color 0.15s,
+          transform 0.1s;
+        cursor: pointer;
+      }
+      .card:hover {
+        border-color: #3d3d50;
+      }
+      .card:active {
+        transform: scale(0.98);
+      }
+      .card.affordable {
+        border-color: var(--gold-dim);
+      }
+      .card.flash {
+        border-color: var(--danger) !important;
+      }
+      .icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #0f0f16;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        color: var(--gold);
+        flex-shrink: 0;
+      }
+      .card-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-title {
+        font-weight: 800;
+        font-size: 14px;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+      }
+      .card-desc {
+        font-size: 11.5px;
+        color: var(--text-dim);
+      }
+      .card-price {
+        background: #2a2a38;
+        color: var(--text-dim);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 800;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .card.affordable .card-price {
+        background: var(--gold);
+        color: #1a1305;
+      }
+      .toast {
+        position: absolute;
+        left: 50%;
+        top: 20px;
+        transform: translateX(-50%);
+        background: #1c1c26;
+        border: 1px solid var(--border);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-dim);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        text-align: center;
+        width: max-content;
+        max-width: 90%;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+
+      /* ---------- help button ---------- */
+      .help-btn {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1.5px solid var(--text-dim);
+        color: var(--text-dim);
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        vertical-align: middle;
+        margin-left: 4px;
+        transition: all 0.15s;
+      }
+      .lb-shortcut-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1.5px solid var(--gold-dim);
+        color: var(--gold);
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 6px;
+        vertical-align: middle;
+        transition: all 0.15s;
+      }
+      .lb-shortcut-btn:hover {
+        background: rgba(242, 182, 12, 0.12);
+      }
+
+      /* ---------- cloud save & leaderboard ---------- */
+      .cloud-status {
+        font-size: 12.5px;
+        color: var(--text-dim);
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        line-height: 1.6;
+      }
+      .cloud-form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .cloud-input {
+        flex: 1;
+        min-width: 0;
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+        font-family: inherit;
+      }
+      .cloud-input:focus {
+        border-color: var(--gold-dim);
+      }
+      .cloud-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .cloud-btn {
+        background: #22222e;
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 700;
+        font-size: 12.5px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .cloud-btn:hover {
+        border-color: #3d3d50;
+      }
+      .cloud-btn.primary {
+        background: var(--gold);
+        color: #1a1305;
+        border-color: var(--gold);
+      }
+      .lb-empty {
+        font-size: 12.5px;
+        color: var(--text-dim);
+        padding: 20px 0;
+        text-align: center;
+      }
+      .lb-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .lb-row:last-child {
+        border-bottom: none;
+      }
+      .lb-row.me {
+        color: var(--gold);
+      }
+      .lb-rank {
+        width: 30px;
+        font-weight: 800;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+      .lb-row.me .lb-rank {
+        color: var(--gold);
+      }
+      .lb-name {
+        flex: 1;
+        min-width: 0;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .lb-score {
+        font-weight: 800;
+        color: var(--gold-dim);
+        flex-shrink: 0;
+        font-size: 12px;
+      }
+      .lb-row.me .lb-score {
+        color: var(--gold);
+      }
+
+      /* ---------- modal (UPDATED UNTUK MENU KIRI) ---------- */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(4, 4, 7, 0.72);
+        backdrop-filter: blur(2px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 24px;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal {
+        width: 100%;
+        max-width: 720px; /* Diperlebar sedikit agar menu kiri leluasa */
+        height: 80vh; /* Membatasi tinggi agar konten dalam bisa scroll */
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .modal-title {
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: 1px;
+        color: var(--gold);
+      }
+      .modal-close {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel2);
+        color: var(--text-dim);
+        font-size: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Wrapper baru untuk layout Menu Kiri dan Konten Kanan */
+      .modal-body {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+        min-height: 0;
+      }
+      .tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 14px 0;
+        border-right: 1px solid var(--border);
+        width: 150px;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        font-weight: 700;
+        font-size: 12.5px;
+        letter-spacing: 0.5px;
+        padding: 12px 18px;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        text-align: left;
+        transition: all 0.2s ease;
+      }
+      .tab-btn.active {
+        color: var(--gold);
+        border-left-color: var(--gold);
+        background: rgba(242, 182, 12, 0.08);
+      }
+      .tab-panels {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+
+      /* Bagian konten Modal */
+      .about-img {
+        width: 100%;
+        max-width: 340px;
+        display: block;
+        margin: 0 auto 16px auto;
+        border-radius: 10px;
+        background: #0d0d14;
+        border: 1px solid var(--border);
+      }
+      .about-desc {
+        font-size: 13px;
+        line-height: 1.7;
+        color: var(--text);
+      }
+      .about-desc b {
+        color: var(--gold);
+      }
+      .htp-step {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .htp-step:last-child {
+        border-bottom: none;
+      }
+      .htp-icon {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .htp-text b {
+        display: block;
+        font-size: 13px;
+        color: var(--gold);
+        margin-bottom: 3px;
+      }
+      .htp-text p {
+        margin: 0;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--text-dim);
+      }
+      .log-entry {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .log-entry:last-child {
+        border-bottom: none;
+      }
+      .log-version {
+        font-weight: 800;
+        font-size: 13.5px;
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .log-date {
+        font-size: 11px;
+        color: var(--text-dim);
+        font-weight: 600;
+      }
+      .log-tag {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        padding: 2px 7px;
+        border-radius: 5px;
+        margin-right: 7px;
+        text-transform: uppercase;
+      }
+      .log-tag.added {
+        background: rgba(94, 230, 201, 0.15);
+        color: #5ee6c9;
+      }
+      .log-tag.changed {
+        background: rgba(242, 182, 12, 0.15);
+        color: var(--gold);
+      }
+      .log-tag.fixed {
+        background: rgba(255, 92, 92, 0.15);
+        color: var(--danger);
+      }
+      .log-list {
+        margin: 8px 0 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .log-list li {
+        font-size: 12.5px;
+        color: var(--text);
+        line-height: 1.7;
+        padding-left: 2px;
+      }
+      .credit-block {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .credit-block:last-child {
+        border-bottom: none;
+      }
+      .credit-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #0d0d14;
+        border: 1px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .credit-name {
+        font-weight: 800;
+        font-size: 14px;
+      }
+      .credit-role {
+        font-size: 11.5px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+      .social-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .social-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        color: var(--text);
+        text-decoration: none;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 12px;
+      }
+
+      /* TAMBAHAN: Media Queries khusus layar Android / Mobile */
+      @media (max-width: 768px) {
+        .app {
+          padding: 10px;
+        }
+        .main {
+          flex-direction: column;
+        }
+        .panel {
+          width: 100%;
+          flex-direction: row;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 6px;
+        }
+        .card {
+          min-width: 230px;
+          flex-shrink: 0;
+        }
+        .topbar {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .money {
+          font-size: 24px;
+        }
+        .levelbadge {
+          flex: 1;
+          min-width: 100%;
+        }
+        .modal-overlay {
+          padding: 14px;
+        }
+
+        /* Modal Menu khusus Mobile kembali ke atas (horizontal scroll) agar tidak memakan layar */
+        .modal-body {
+          flex-direction: column;
+        }
+        .tabs {
+          flex-direction: row;
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding: 6px 14px;
+          overflow-x: auto;
+        }
+        .tab-btn {
+          border-left: none;
+          border-bottom: 3px solid transparent;
+          text-align: center;
+          white-space: nowrap;
+          padding: 10px 14px;
+        }
+        .tab-btn.active {
+          border-left-color: transparent;
+          border-bottom-color: var(--gold);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="topbar">
+        <div>
+          <div class="stat-label">
+            AVAILABLE
+            <button
+              id="helpBtn"
+              class="help-btn"
+              title="Info & Bantuan"
+              aria-label="Info & Bantuan"
+            >
+              ?
+            </button>
+            <button
+              id="leaderboardBtn"
+              class="lb-shortcut-btn"
+              title="Leaderboard"
+              aria-label="Leaderboard"
+            >
+              🏆
+            </button>
+          </div>
+          <div class="stat-value">BALLS : <span id="ballCount">0</span></div>
+        </div>
+        <div class="money" id="money">0 $</div>
+        <div class="levelbadge">
+          <div class="fill" id="lvFill" style="width: 0%"></div>
+          <span id="lvText">Level 1</span>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="board-wrap">
+          <canvas id="board"></canvas>
+          <div class="hint" id="hint">
+            CLICK ANYWHERE IN THE BOARD TO DROP A BALL<br />DRAG A PADDLE TO
+            MOVE IT MANUALLY, OR CLICK IT TO TOGGLE AUTO-MOVE
+          </div>
+          <div class="toast" id="toast"></div>
+        </div>
+
+        <div class="panel">
+          <div class="card" id="btnAddBall">
+            <div class="icon">+</div>
+            <div class="card-body">
+              <div class="card-title">ADD BALL</div>
+              <div class="card-desc">Increase Your Ball Count</div>
+            </div>
+            <div class="card-price" id="priceAddBall">-</div>
+          </div>
+
+          <div class="card" id="btnBallProfit">
+            <div class="icon">x2</div>
+            <div class="card-body">
+              <div class="card-title">BALL PROFIT</div>
+              <div class="card-desc">Increase Ball's Profit</div>
+            </div>
+            <div class="card-price" id="priceBallProfit">-</div>
+          </div>
+
+          <div class="card" id="btnAddPaddle">
+            <div class="icon">▮</div>
+            <div class="card-body">
+              <div class="card-title">ADD PADDLE</div>
+              <div class="card-desc">Add A New Paddle</div>
+            </div>
+            <div class="card-price" id="priceAddPaddle">-</div>
+          </div>
+
+          <div class="card" id="btnMerge">
+            <div class="icon">▲</div>
+            <div class="card-body">
+              <div class="card-title">MERGE PADDLES</div>
+              <div class="card-desc">Merge Paddles And Get A Higher One</div>
+            </div>
+            <div class="card-price" id="priceMerge">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">INFO &amp; BANTUAN</div>
+          <button class="modal-close" id="modalClose">✕</button>
+        </div>
+
+        <!-- WRAPPER BARU untuk menu samping -->
+        <div class="modal-body">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="about">About Game</button>
+            <button class="tab-btn" data-tab="htp">How to Play</button>
+            <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+            <button class="tab-btn" data-tab="cloud">Cloud Save</button>
+            <button class="tab-btn" data-tab="log">Log Update</button>
+            <button class="tab-btn" data-tab="credit">Credit</button>
+          </div>
+
+          <div class="tab-panels">
+            <div class="tab-panel active" id="panel-about">
+              <svg
+                class="about-img"
+                viewBox="0 0 340 180"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect x="0" y="0" width="340" height="180" fill="#0d0d14" />
+                <rect
+                  x="14"
+                  y="14"
+                  width="312"
+                  height="152"
+                  rx="8"
+                  fill="none"
+                  stroke="#3a3a48"
+                  stroke-dasharray="5 5"
+                />
+                <rect
+                  x="14"
+                  y="40"
+                  width="10"
+                  height="50"
+                  rx="4"
+                  fill="#f2b60c"
+                />
+                <rect
+                  x="316"
+                  y="90"
+                  width="10"
+                  height="50"
+                  rx="4"
+                  fill="#f2b60c"
+                />
+                <rect
+                  x="150"
+                  y="14"
+                  width="55"
+                  height="10"
+                  rx="4"
+                  fill="#f2b60c"
+                />
+                <rect
+                  x="120"
+                  y="146"
+                  width="55"
+                  height="10"
+                  rx="4"
+                  fill="#f2b60c"
+                />
+                <circle cx="120" cy="70" r="7" fill="#fff" />
+                <circle cx="220" cy="110" r="6" fill="#fff" opacity="0.8" />
+                <circle cx="260" cy="55" r="5" fill="#fff" opacity="0.6" />
+              </svg>
+              <div class="about-desc">
+                <b>Paddle Bounce Idle</b> adalah game idle/incremental
+                sederhana: jatuhkan bola ke papan, biarkan bola memantul dan
+                menabrak paddle di setiap sisi untuk menghasilkan uang secara
+                otomatis. Gunakan uang tersebut untuk membeli upgrade — tambah
+                bola, naikkan profit bola, tambah paddle baru, atau gabungkan
+                (merge) paddle sejenis menjadi lebih kuat. Semakin banyak dan
+                semakin tinggi nilai bola/paddle-mu, semakin cepat uang
+                bertambah bahkan saat kamu tidak melakukan apa-apa.
+              </div>
+            </div>
+
+            <div class="tab-panel" id="panel-htp">
+              <div class="htp-step">
+                <div class="htp-icon">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <circle
+                      cx="17"
+                      cy="17"
+                      r="14"
+                      stroke="#f2b60c"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M17 8 L17 26 M8 17 L26 17"
+                      stroke="#f2b60c"
+                      stroke-width="1.5"
+                      stroke-dasharray="2 3"
+                    />
+                    <circle cx="17" cy="17" r="3.5" fill="#fff" />
+                  </svg>
+                </div>
+                <div class="htp-text">
+                  <b>1. Jatuhkan Bola</b>
+                  <p>
+                    Klik di area papan untuk menjatuhkan bola baru, selama stok
+                    "Available Balls" masih ada. Bola akan memantul sendiri ke
+                    segala arah.
+                  </p>
+                </div>
+              </div>
+
+              <div class="htp-step">
+                <div class="htp-icon">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <rect
+                      x="2"
+                      y="14"
+                      width="8"
+                      height="6"
+                      rx="2"
+                      fill="#f2b60c"
+                    />
+                    <circle cx="24" cy="17" r="5" fill="#fff" />
+                    <path
+                      d="M18 17 L11 17"
+                      stroke="#5ee6c9"
+                      stroke-width="1.5"
+                    />
+                  </svg>
+                </div>
+                <div class="htp-text">
+                  <b>2. Hasilkan Uang dari Paddle</b>
+                  <p>
+                    Saat bola menabrak paddle (bar kuning), kamu dapat uang =
+                    nilai bola × nilai paddle. Menabrak dinding kosong tidak
+                    menghasilkan apa-apa.
+                  </p>
+                </div>
+              </div>
+
+              <div class="htp-step">
+                <div class="htp-icon">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <rect
+                      x="14"
+                      y="4"
+                      width="6"
+                      height="18"
+                      rx="3"
+                      fill="#f2b60c"
+                    />
+                    <path
+                      d="M17 24 L17 30 M13 27 L17 31 L21 27"
+                      stroke="#5ee6c9"
+                      stroke-width="1.6"
+                      fill="none"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="htp-text">
+                  <b>3. Gerakkan Paddle</b>
+                  <p>
+                    Drag paddle untuk memindahkannya secara manual. Klik singkat
+                    untuk mengaktifkan/menonaktifkan mode Auto-Move (bergaris
+                    tepi toska).
+                  </p>
+                </div>
+              </div>
+
+              <div class="htp-step">
+                <div class="htp-icon">
+                  <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                    <path
+                      d="M6 10 H26 L23 22 H9 Z"
+                      stroke="#f2b60c"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linejoin="round"
+                    />
+                    <circle cx="12" cy="27" r="2" fill="#f2b60c" />
+                    <circle cx="21" cy="27" r="2" fill="#f2b60c" />
+                    <path
+                      d="M4 6 H7 L9 10"
+                      stroke="#f2b60c"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <div class="htp-text">
+                  <b>4. Belanja Upgrade</b>
+                  <p>
+                    Pakai uang untuk beli
+                    <b style="color: #e8e8ee">Add Ball</b>,
+                    <b style="color: #e8e8ee">Ball Profit</b>,
+                    <b style="color: #e8e8ee">Add Paddle</b>, atau
+                    <b style="color: #e8e8ee">Merge Paddles</b>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="panel-leaderboard">
+              <div class="htp-text" style="margin-bottom: 14px">
+                <b>Leaderboard Global</b>
+                <p>
+                  Peringkat pemain berdasarkan total uang yang pernah
+                  dihasilkan sepanjang permainan (bukan uang yang tersisa).
+                </p>
+              </div>
+              <div id="leaderboardList">
+                <div class="lb-empty">Memuat...</div>
+              </div>
+              <button
+                id="btnRefreshLb"
+                class="cloud-btn"
+                style="margin-top: 12px"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+
+            <div class="tab-panel" id="panel-cloud">
+              <div class="htp-text" style="margin-bottom: 14px">
+                <b>Cloud Save & Sinkronisasi</b>
+                <p>
+                  Simpan progresmu ke akun agar bisa dilanjutkan di perangkat
+                  lain, dan tampil di leaderboard global. Progres tetap
+                  otomatis tersimpan di perangkat ini meski tidak memakai
+                  fitur ini.
+                </p>
+              </div>
+              <div id="cloudStatus" class="cloud-status">Memuat status...</div>
+              <div class="cloud-form">
+                <input
+                  id="cloudUsernameInput"
+                  class="cloud-input"
+                  type="text"
+                  maxlength="20"
+                  placeholder="Nama pemain (3-20 karakter)"
+                />
+                <button id="btnSetUsername" class="cloud-btn">
+                  Simpan Nama
+                </button>
+              </div>
+              <div class="cloud-actions">
+                <button id="btnCloudSave" class="cloud-btn primary">
+                  ☁ Simpan ke Cloud
+                </button>
+                <button id="btnCloudLoad" class="cloud-btn">
+                  ⭯ Muat dari Cloud
+                </button>
+              </div>
+            </div>
+
+            <div class="tab-panel" id="panel-log">
+              <div id="logListContainer"></div>
+            </div>
+
+            <div class="tab-panel" id="panel-credit">
+              <div class="credit-block">
+                <div class="credit-avatar">
+                  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                    <circle
+                      cx="13"
+                      cy="9"
+                      r="5"
+                      stroke="#f2b60c"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M3 23c0-6 5-9 10-9s10 3 10 9"
+                      stroke="#f2b60c"
+                      stroke-width="2"
+                      fill="none"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <div class="credit-name" id="creditName">-</div>
+                  <div class="credit-role" id="creditRole">-</div>
+                </div>
+              </div>
+              <div style="height: 14px"></div>
+              <div class="social-list" id="socialList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================
+         KONFIGURASI SUPABASE (Cloud Save & Leaderboard)
+         Isi SUPABASE_URL dan SUPABASE_ANON_KEY dengan nilai dari
+         dashboard project Supabase kamu (Project Settings > API).
+         Jika dibiarkan kosong, game tetap berjalan normal dengan
+         save lokal (localStorage), hanya fitur Cloud Save &
+         Leaderboard yang akan nonaktif.
+         Lihat README.md / supabase/schema.sql untuk panduan setup.
+    ==================================================== -->
+    <script>
+      window.SUPABASE_URL = "";
+      window.SUPABASE_ANON_KEY = "";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- Script Game Original -->
+    <script>
+      (function () {
+        const canvas = document.getElementById("board");
+        const ctx = canvas.getContext("2d");
+        const boardWrap = canvas.parentElement;
+        const hint = document.getElementById("hint");
+        const toastEl = document.getElementById("toast");
+
+        let money = 0;
+        let availableBalls = 5;
+        let ballMultiplier = 1;
+        let ballsBought = 0;
+        let profitBought = 0;
+        let paddlesBought = 0;
+        let mergesBought = 0;
+        let totalEarned = 0;
+
+        const PADDLE_THICK = 14;
+        const PADDLE_LEN = 78;
+        const BALL_R = 7;
+        const AUTO_SPEED = 0.0055;
+
+        // TAMBAHAN: Properti hitFlash untuk efek kilat saat ditabrak
+        let paddles = [
+          { side: "top", pos: 0.5, value: 1, auto: true, dir: 1, hitFlash: 0 },
+          {
+            side: "bottom",
+            pos: 0.5,
+            value: 1,
+            auto: true,
+            dir: -1,
+            hitFlash: 0,
+          },
+          { side: "left", pos: 0.5, value: 1, auto: true, dir: 1, hitFlash: 0 },
+          {
+            side: "right",
+            pos: 0.5,
+            value: 1,
+            auto: true,
+            dir: -1,
+            hitFlash: 0,
+          },
+        ];
+        let balls = [];
+        let floaters = [];
+
+        // TAMBAHAN: Array untuk menampung visual efek partikel
+        let particles = [];
+
+        function costAddBall() {
+          return Math.round(45 * Math.pow(1.55, ballsBought));
+        }
+        function costProfit() {
+          return Math.round(300 * Math.pow(1.9, profitBought));
+        }
+        function costAddPaddle() {
+          return Math.round(140 * Math.pow(1.6, paddlesBought));
+        }
+        function costMerge() {
+          return Math.round(90 * Math.pow(1.45, mergesBought));
+        }
+
+        function fmtMoney(n) {
+          n = Math.floor(n);
+          if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "B $";
+          if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M $";
+          if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K $";
+          return n + " $";
+        }
+
+        function showToast(msg) {
+          toastEl.textContent = msg;
+          toastEl.classList.add("show");
+          clearTimeout(showToast._t);
+          showToast._t = setTimeout(
+            () => toastEl.classList.remove("show"),
+            1400,
+          );
+        }
+
+        const LOGICAL_W = 700;
+        const LOGICAL_H = 460;
+        const W = LOGICAL_W,
+          H = LOGICAL_H;
+        let DPR = 1;
+
+        function resize() {
+          DPR = window.devicePixelRatio || 1;
+          const cw = boardWrap.clientWidth;
+          const ch = boardWrap.clientHeight;
+          const scale = Math.max(
+            0.001,
+            Math.min(cw / LOGICAL_W, ch / LOGICAL_H),
+          );
+          const dispW = LOGICAL_W * scale;
+          const dispH = LOGICAL_H * scale;
+
+          canvas.style.width = dispW + "px";
+          canvas.style.height = dispH + "px";
+          canvas.width = LOGICAL_W * DPR;
+          canvas.height = LOGICAL_H * DPR;
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        function paddleRect(p) {
+          if (p.side === "left" || p.side === "right") {
+            const edgeLen = H;
+            const half = PADDLE_LEN / 2;
+            let center = clamp(p.pos * edgeLen, half, edgeLen - half);
+            p.pos = center / edgeLen;
+            const x = p.side === "left" ? 0 : W - PADDLE_THICK;
+            return {
+              x,
+              y: center - half,
+              w: PADDLE_THICK,
+              h: PADDLE_LEN,
+              orient: "v",
+              center,
+            };
+          } else {
+            const edgeLen = W;
+            const half = PADDLE_LEN / 2;
+            let center = clamp(p.pos * edgeLen, half, edgeLen - half);
+            p.pos = center / edgeLen;
+            const y = p.side === "top" ? 0 : H - PADDLE_THICK;
+            return {
+              x: center - half,
+              y,
+              w: PADDLE_LEN,
+              h: PADDLE_THICK,
+              orient: "h",
+              center,
+            };
+          }
+        }
+        function clamp(v, a, b) {
+          return Math.max(a, Math.min(b, v));
+        }
+
+        function updatePaddlesAuto() {
+          for (const p of paddles) {
+            if (!p.auto) continue;
+            const edgeLen = p.side === "left" || p.side === "right" ? H : W;
+            const halfFrac = PADDLE_LEN / 2 / edgeLen;
+            p.pos += p.dir * AUTO_SPEED;
+            if (p.pos >= 1 - halfFrac) {
+              p.pos = 1 - halfFrac;
+              p.dir = -1;
+            }
+            if (p.pos <= halfFrac) {
+              p.pos = halfFrac;
+              p.dir = 1;
+            }
+          }
+        }
+
+        function spawnBall(x, y) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2.4 + Math.random() * 1.6;
+          balls.push({
+            x: clamp(x, BALL_R + 4, W - BALL_R - 4),
+            y: clamp(y, BALL_R + 4, H - BALL_R - 4),
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            baseValue: 1,
+          });
+        }
+
+        // TAMBAHAN: Fungsi untuk me-spawn partikel saat bola menabrak paddle
+        function spawnParticles(x, y) {
+          for (let i = 0; i < 8; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 2 + 1.5;
+            particles.push({
+              x: x,
+              y: y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              life: 1,
+              size: Math.random() * 2 + 1,
+              color: Math.random() > 0.5 ? "#f2b60c" : "#ffffff",
+            });
+          }
+        }
+
+        function paddleCoversPoint(p, coord) {
+          const r = paddleRect(p);
+          if (r.orient === "v") return coord >= r.y && coord <= r.y + r.h;
+          else return coord >= r.x && coord <= r.x + r.w;
+        }
+
+        function findPaddleOnSide(side, coord) {
+          for (const p of paddles) {
+            if (p.side === side && paddleCoversPoint(p, coord)) return p;
+          }
+          return null;
+        }
+
+        function addFloater(x, y, text, color) {
+          floaters.push({ x, y, text, color, life: 1 });
+        }
+
+        function earn(ball, paddle) {
+          const gain = ball.baseValue * ballMultiplier * paddle.value;
+          money += gain;
+          totalEarned += gain;
+          addFloater(
+            ball.x,
+            ball.y,
+            "+" + fmtMoney(gain).replace(" $", ""),
+            "#f2b60c",
+          );
+
+          // TAMBAHAN: Panggil visual efek dan beri tanda flash putih pada paddle
+          paddle.hitFlash = 1.0;
+          spawnParticles(ball.x, ball.y);
+        }
+
+        function updateBalls() {
+          for (const b of balls) {
+            b.x += b.vx;
+            b.y += b.vy;
+
+            if (b.x - BALL_R <= 0) {
+              b.x = BALL_R;
+              const p = findPaddleOnSide("left", b.y);
+              if (p) earn(b, p);
+              b.vx = Math.abs(b.vx);
+            } else if (b.x + BALL_R >= W) {
+              b.x = W - BALL_R;
+              const p = findPaddleOnSide("right", b.y);
+              if (p) earn(b, p);
+              b.vx = -Math.abs(b.vx);
+            }
+            if (b.y - BALL_R <= 0) {
+              b.y = BALL_R;
+              const p = findPaddleOnSide("top", b.x);
+              if (p) earn(b, p);
+              b.vy = Math.abs(b.vy);
+            } else if (b.y + BALL_R >= H) {
+              b.y = H - BALL_R;
+              const p = findPaddleOnSide("bottom", b.x);
+              if (p) earn(b, p);
+              b.vy = -Math.abs(b.vy);
+            }
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, W, H);
+
+          for (const p of paddles) {
+            const r = paddleRect(p);
+            const isDrag = p === dragPaddle;
+
+            // TAMBAHAN: Logika pewarnaan Paddle berubah menjadi putih sementara saat ditabrak
+            let baseColor = isDrag ? "#ffd54a" : "#f2b60c";
+            if (p.hitFlash > 0) {
+              ctx.fillStyle = "#ffffff";
+              p.hitFlash -= 0.1; // Redupkan kilat secara perlahan
+            } else {
+              ctx.fillStyle = baseColor;
+            }
+
+            roundRect(r.x, r.y, r.w, r.h, 6);
+            ctx.fill();
+
+            if (p.auto) {
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = "#5ee6c9";
+              roundRect(r.x, r.y, r.w, r.h, 6);
+              ctx.stroke();
+            }
+            ctx.fillStyle = "#1a1305";
+            ctx.font = "700 13px Segoe UI, Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(p.value, r.x + r.w / 2, r.y + r.h / 2);
+          }
+
+          for (const b of balls) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.shadowColor = "rgba(242,182,12,0.6)";
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+
+          // TAMBAHAN: Render Partikel Efek Visual
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.04;
+            if (p.life <= 0) {
+              particles.splice(i, 1);
+            } else {
+              ctx.globalAlpha = p.life;
+              ctx.fillStyle = p.color;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.globalAlpha = 1;
+            }
+          }
+
+          for (let i = floaters.length - 1; i >= 0; i--) {
+            const f = floaters[i];
+            ctx.globalAlpha = f.life;
+            ctx.fillStyle = f.color;
+            ctx.font = "700 12px Segoe UI, Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(f.text, f.x, f.y - 14 * (1 - f.life));
+            ctx.globalAlpha = 1;
+            f.life -= 0.02;
+            if (f.life <= 0) floaters.splice(i, 1);
+          }
+        }
+        function roundRect(x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+        }
+
+        let dragPaddle = null;
+        let downPos = null;
+        let moved = false;
+
+        function getPos(e) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = LOGICAL_W / rect.width;
+          const scaleY = LOGICAL_H / rect.height;
+          const cx =
+            ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) *
+            scaleX;
+          const cy =
+            ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top) *
+            scaleY;
+          return { x: cx, y: cy };
+        }
+
+        function hitPaddle(pos) {
+          for (const p of paddles) {
+            const r = paddleRect(p);
+            if (
+              pos.x >= r.x - 4 &&
+              pos.x <= r.x + r.w + 4 &&
+              pos.y >= r.y - 4 &&
+              pos.y <= r.y + r.h + 4
+            )
+              return p;
+          }
+          return null;
+        }
+
+        function pointerDown(e) {
+          const pos = getPos(e);
+          downPos = pos;
+          moved = false;
+          const p = hitPaddle(pos);
+          if (p) dragPaddle = p;
+        }
+        function pointerMove(e) {
+          if (!downPos) return;
+          const pos = getPos(e);
+          if (Math.abs(pos.x - downPos.x) + Math.abs(pos.y - downPos.y) > 4)
+            moved = true;
+
+          if (dragPaddle) {
+            if (moved) dragPaddle.auto = false;
+            const dLeft = pos.x,
+              dRight = W - pos.x,
+              dTop = pos.y,
+              dBottom = H - pos.y;
+            const m = Math.min(dLeft, dRight, dTop, dBottom);
+            let side;
+            if (m === dLeft) side = "left";
+            else if (m === dRight) side = "right";
+            else if (m === dTop) side = "top";
+            else side = "bottom";
+            dragPaddle.side = side;
+            if (side === "left" || side === "right")
+              dragPaddle.pos = clamp(pos.y / H, 0, 1);
+            else dragPaddle.pos = clamp(pos.x / W, 0, 1);
+          }
+        }
+        function pointerUp(e) {
+          if (dragPaddle) {
+            if (!moved) {
+              dragPaddle.auto = !dragPaddle.auto;
+              if (dragPaddle.auto)
+                dragPaddle.dir = Math.random() < 0.5 ? 1 : -1;
+              showToast(
+                dragPaddle.auto ? "Paddle: AUTO-MOVE ON" : "Paddle: MANUAL",
+              );
+            }
+            dragPaddle = null;
+            downPos = null;
+            return;
+          }
+          if (downPos && !moved) {
+            if (availableBalls > 0) {
+              spawnBall(downPos.x, downPos.y);
+              availableBalls--;
+              updateUI();
+              hint.style.display = "none";
+            } else {
+              showToast('Tidak ada bola tersedia. Beli "Add Ball" dulu.');
+            }
+          }
+          downPos = null;
+        }
+
+        canvas.addEventListener("mousedown", pointerDown);
+        window.addEventListener("mousemove", pointerMove);
+        window.addEventListener("mouseup", pointerUp);
+        canvas.addEventListener(
+          "touchstart",
+          (e) => {
+            pointerDown(e);
+            e.preventDefault();
+          },
+          { passive: false },
+        );
+        canvas.addEventListener(
+          "touchmove",
+          (e) => {
+            pointerMove(e);
+            e.preventDefault();
+          },
+          { passive: false },
+        );
+        canvas.addEventListener(
+          "touchend",
+          (e) => {
+            pointerUp(e);
+            e.preventDefault();
+          },
+          { passive: false },
+        );
+
+        const btnAddBall = document.getElementById("btnAddBall");
+        const btnBallProfit = document.getElementById("btnBallProfit");
+        const btnAddPaddle = document.getElementById("btnAddPaddle");
+        const btnMerge = document.getElementById("btnMerge");
+
+        function trySpend(cost) {
+          if (money >= cost) {
+            money -= cost;
+            return true;
+          }
+          return false;
+        }
+        function flash(btn) {
+          btn.classList.add("flash");
+          setTimeout(() => btn.classList.remove("flash"), 300);
+        }
+
+        btnAddBall.addEventListener("click", () => {
+          const cost = costAddBall();
+          if (trySpend(cost)) {
+            availableBalls++;
+            ballsBought++;
+            updateUI();
+          } else flash(btnAddBall);
+        });
+
+        btnBallProfit.addEventListener("click", () => {
+          const cost = costProfit();
+          if (trySpend(cost)) {
+            ballMultiplier *= 2;
+            profitBought++;
+            updateUI();
+          } else flash(btnBallProfit);
+        });
+
+        const MAX_SIDE_COVERAGE = 0.75;
+
+        function sideCoverage(side) {
+          const edgeLen = side === "left" || side === "right" ? H : W;
+          const total =
+            paddles.filter((p) => p.side === side).length * PADDLE_LEN;
+          return total / edgeLen;
+        }
+
+        btnAddPaddle.addEventListener("click", () => {
+          const cost = costAddPaddle();
+          const sides = ["top", "bottom", "left", "right"];
+          const coverage = sides.map(sideCoverage);
+          const minCoverage = Math.min(...coverage);
+          if (minCoverage >= MAX_SIDE_COVERAGE) {
+            showToast("Semua sisi papan sudah penuh paddle.");
+            flash(btnAddPaddle);
+            return;
+          }
+          if (trySpend(cost)) {
+            const candidates = sides.filter(
+              (s, i) => coverage[i] === minCoverage,
+            );
+            const side =
+              candidates[Math.floor(Math.random() * candidates.length)];
+            paddles.push({
+              side,
+              pos: Math.random() * 0.8 + 0.1,
+              value: 1,
+              auto: true,
+              dir: Math.random() < 0.5 ? 1 : -1,
+              hitFlash: 0, // TAMBAHAN: inisialisasi hitFlash untuk paddle baru
+            });
+            paddlesBought++;
+            updateUI();
+          } else flash(btnAddPaddle);
+        });
+
+        btnMerge.addEventListener("click", () => {
+          let found = null;
+          outer: for (let i = 0; i < paddles.length; i++) {
+            for (let j = i + 1; j < paddles.length; j++) {
+              if (
+                paddles[i].side === paddles[j].side &&
+                paddles[i].value === paddles[j].value
+              ) {
+                found = [i, j];
+                break outer;
+              }
+            }
+          }
+          if (!found) {
+            showToast("Tidak ada paddle sejenis untuk digabung.");
+            flash(btnMerge);
+            return;
+          }
+          const cost = costMerge();
+          if (trySpend(cost)) {
+            const [i, j] = found;
+            paddles[i].value += paddles[j].value;
+            paddles[i].pos = (paddles[i].pos + paddles[j].pos) / 2;
+            paddles.splice(j, 1);
+            mergesBought++;
+            updateUI();
+          } else flash(btnMerge);
+        });
+
+        function updateUI() {
+          document.getElementById("ballCount").textContent = availableBalls;
+          document.getElementById("money").textContent = fmtMoney(money);
+          document.getElementById("priceAddBall").textContent =
+            fmtMoney(costAddBall());
+          document.getElementById("priceBallProfit").textContent =
+            fmtMoney(costProfit());
+          document.getElementById("priceAddPaddle").textContent =
+            fmtMoney(costAddPaddle());
+          document.getElementById("priceMerge").textContent =
+            fmtMoney(costMerge());
+
+          setAfford(btnAddBall, money >= costAddBall());
+          setAfford(btnBallProfit, money >= costProfit());
+          setAfford(btnAddPaddle, money >= costAddPaddle());
+          setAfford(btnMerge, money >= costMerge());
+
+          const totalPurchases =
+            ballsBought + profitBought + paddlesBought + mergesBought;
+          const level = Math.floor(totalPurchases / 5) + 1;
+          const progress = ((totalPurchases % 5) / 5) * 100;
+          document.getElementById("lvText").textContent = "Level " + level;
+          document.getElementById("lvFill").style.width = progress + "%";
+        }
+        function setAfford(btn, ok) {
+          btn.classList.toggle("affordable", ok);
+        }
+
+        const updateLog = [
+          {
+            version: "v1.0.2",
+            date: "03/08/2026",
+            changes: [
+              {
+                type: "added",
+                text: "Menu diubah menjadi layout sidebar (kiri) di desktop.",
+              },
+              {
+                type: "added",
+                text: "VFX: Partikel dan kilatan putih ditambahkan saat paddle memantulkan bola.",
+              },
+            ],
+          },
+          {
+            version: "v1.0.1",
+            date: "03/08/2026",
+            changes: [
+              {
+                type: "fixed",
+                text: "Kompatibilitas layout portrait untuk layar HP/Android.",
+              },
+            ],
+          },
+          {
+            version: "v1.0.0",
+            date: "03/08/2026",
+            changes: [
+              {
+                type: "added",
+                text: "Rilis awal: papan pantul bola, 4 paddle di tiap sisi, sistem uang.",
+              },
+            ],
+          },
+        ];
+
+        function renderUpdateLog() {
+          const container = document.getElementById("logListContainer");
+          container.innerHTML = updateLog
+            .map(
+              (entry) => `
+            <div class="log-entry">
+              <div class="log-version">${entry.version} <span class="log-date">${entry.date}</span></div>
+              <ul class="log-list">
+                ${entry.changes.map((c) => `<li><span class="log-tag ${c.type}">${c.type}</span>${escapeHtml(c.text)}</li>`).join("")}
+              </ul>
+            </div>`,
+            )
+            .join("");
+        }
+
+        const creditData = {
+          name: "Nama Pembuat Game",
+          role: "Game Developer",
+          socials: [{ label: "YouTube", url: "https://youtube.com/@username" }],
+        };
+
+        function renderCredit() {
+          document.getElementById("creditName").textContent = creditData.name;
+          document.getElementById("creditRole").textContent = creditData.role;
+          document.getElementById("socialList").innerHTML = creditData.socials
+            .map(
+              (s) => `
+            <a class="social-item" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
+              <span class="dot"></span>${escapeHtml(s.label)}
+            </a>`,
+            )
+            .join("");
+        }
+
+        function escapeHtml(str) {
+          return String(str).replace(
+            /[&<>"']/g,
+            (ch) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[ch],
+          );
+        }
+        function escapeAttr(str) {
+          return escapeHtml(str);
+        }
+
+        const modalOverlay = document.getElementById("modalOverlay");
+        const helpBtn = document.getElementById("helpBtn");
+        const leaderboardBtn = document.getElementById("leaderboardBtn");
+        const modalClose = document.getElementById("modalClose");
+
+        function openModal() {
+          modalOverlay.classList.add("open");
+        }
+        function closeModal() {
+          modalOverlay.classList.remove("open");
+        }
+        helpBtn.addEventListener("click", openModal);
+        modalClose.addEventListener("click", closeModal);
+        modalOverlay.addEventListener("click", (e) => {
+          if (e.target === modalOverlay) closeModal();
+        });
+        window.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeModal();
+        });
+
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".tab-btn")
+              .forEach((b) => b.classList.remove("active"));
+            document
+              .querySelectorAll(".tab-panel")
+              .forEach((p) => p.classList.remove("active"));
+            btn.classList.add("active");
+            document
+              .getElementById("panel-" + btn.dataset.tab)
+              .classList.add("active");
+            if (btn.dataset.tab === "leaderboard") fetchLeaderboard();
+            if (btn.dataset.tab === "cloud") {
+              document.getElementById("cloudUsernameInput").value =
+                cloudUsername;
+              updateCloudPanel();
+            }
+          });
+        });
+
+        renderUpdateLog();
+        renderCredit();
+
+        leaderboardBtn.addEventListener("click", () => {
+          openModal();
+          document
+            .querySelectorAll(".tab-btn")
+            .forEach((b) =>
+              b.classList.toggle("active", b.dataset.tab === "leaderboard"),
+            );
+          document
+            .querySelectorAll(".tab-panel")
+            .forEach((p) =>
+              p.classList.toggle("active", p.id === "panel-leaderboard"),
+            );
+          fetchLeaderboard();
+        });
+
+        // =====================================================
+        // SISTEM SAVE: Local (localStorage) + Cloud (Supabase)
+        // =====================================================
+        const LOCAL_SAVE_KEY = "paddleBounceIdle_save_v1";
+        const SUPABASE_URL = window.SUPABASE_URL || "";
+        const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+        let sb = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+          sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        let cloudUser = null;
+        let cloudUsername = localStorage.getItem("pb_username") || "";
+        let lastCloudSyncAt = 0;
+
+        function serializeState() {
+          return {
+            v: 1,
+            money,
+            availableBalls,
+            ballMultiplier,
+            ballsBought,
+            profitBought,
+            paddlesBought,
+            mergesBought,
+            totalEarned,
+            paddles: paddles.map((p) => ({
+              side: p.side,
+              pos: p.pos,
+              value: p.value,
+              auto: p.auto,
+              dir: p.dir,
+            })),
+          };
+        }
+
+        function applyState(s) {
+          if (!s) return;
+          money = s.money ?? 0;
+          availableBalls = s.availableBalls ?? 5;
+          ballMultiplier = s.ballMultiplier ?? 1;
+          ballsBought = s.ballsBought ?? 0;
+          profitBought = s.profitBought ?? 0;
+          paddlesBought = s.paddlesBought ?? 0;
+          mergesBought = s.mergesBought ?? 0;
+          totalEarned = s.totalEarned ?? money;
+          if (Array.isArray(s.paddles) && s.paddles.length) {
+            paddles = s.paddles.map((p) => ({
+              side: p.side,
+              pos: p.pos,
+              value: p.value,
+              auto: p.auto,
+              dir: p.dir ?? (Math.random() < 0.5 ? 1 : -1),
+              hitFlash: 0,
+            }));
+          }
+          balls = [];
+          updateUI();
+        }
+
+        function saveLocal() {
+          try {
+            localStorage.setItem(
+              LOCAL_SAVE_KEY,
+              JSON.stringify(serializeState()),
+            );
+          } catch (e) {
+            /* storage unavailable / full, ignore */
+          }
+        }
+
+        function loadLocal() {
+          try {
+            const raw = localStorage.getItem(LOCAL_SAVE_KEY);
+            if (raw) applyState(JSON.parse(raw));
+          } catch (e) {
+            /* corrupted save, ignore */
+          }
+        }
+
+        async function ensureCloudUser() {
+          if (!sb) return null;
+          if (cloudUser) return cloudUser;
+          const {
+            data: { session },
+          } = await sb.auth.getSession();
+          if (session && session.user) {
+            cloudUser = session.user;
+            return cloudUser;
+          }
+          const { data, error } = await sb.auth.signInAnonymously();
+          if (error) {
+            console.error("Supabase anonymous sign-in failed:", error);
+            return null;
+          }
+          cloudUser = data.user;
+          return cloudUser;
+        }
+
+        async function setCloudUsername(name) {
+          const user = await ensureCloudUser();
+          if (!user) return false;
+          const { error } = await sb
+            .from("profiles")
+            .upsert({ id: user.id, username: name });
+          if (error) {
+            showToast("Gagal menyimpan nama: " + error.message);
+            return false;
+          }
+          cloudUsername = name;
+          localStorage.setItem("pb_username", name);
+          return true;
+        }
+
+        async function cloudSave() {
+          if (!sb) {
+            showToast("Cloud save belum dikonfigurasi.");
+            return;
+          }
+          if (!cloudUsername) {
+            showToast("Set nama pemain dulu di tab Cloud Save.");
+            return;
+          }
+          const user = await ensureCloudUser();
+          if (!user) {
+            showToast("Gagal terhubung ke server.");
+            return;
+          }
+          const nowIso = new Date().toISOString();
+          const level =
+            Math.floor(
+              (ballsBought + profitBought + paddlesBought + mergesBought) / 5,
+            ) + 1;
+          const { error: e1 } = await sb
+            .from("saves")
+            .upsert({ user_id: user.id, data: serializeState(), updated_at: nowIso });
+          const { error: e2 } = await sb.from("leaderboard").upsert({
+            user_id: user.id,
+            username: cloudUsername,
+            score: Math.floor(totalEarned),
+            level,
+            updated_at: nowIso,
+          });
+          if (e1 || e2) {
+            showToast("Gagal menyimpan ke cloud.");
+            return;
+          }
+          lastCloudSyncAt = Date.now();
+          showToast("Progres tersimpan ke cloud!");
+          updateCloudPanel();
+        }
+
+        async function cloudLoad() {
+          if (!sb) {
+            showToast("Cloud save belum dikonfigurasi.");
+            return;
+          }
+          const user = await ensureCloudUser();
+          if (!user) {
+            showToast("Gagal terhubung ke server.");
+            return;
+          }
+          const { data, error } = await sb
+            .from("saves")
+            .select("data")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (error) {
+            showToast("Gagal memuat save dari cloud.");
+            return;
+          }
+          if (!data) {
+            showToast("Belum ada save di cloud untuk akun ini.");
+            return;
+          }
+          applyState(data.data);
+          saveLocal();
+          showToast("Save dari cloud berhasil dimuat!");
+        }
+
+        async function fetchLeaderboard() {
+          const listEl = document.getElementById("leaderboardList");
+          if (!sb) {
+            listEl.innerHTML =
+              '<div class="lb-empty">Leaderboard belum dikonfigurasi. Lihat README.md untuk setup Supabase.</div>';
+            return;
+          }
+          listEl.innerHTML = '<div class="lb-empty">Memuat...</div>';
+          const { data, error } = await sb
+            .from("leaderboard")
+            .select("username, score, level")
+            .order("score", { ascending: false })
+            .limit(20);
+          if (error) {
+            listEl.innerHTML =
+              '<div class="lb-empty">Gagal memuat leaderboard.</div>';
+            return;
+          }
+          if (!data || !data.length) {
+            listEl.innerHTML =
+              '<div class="lb-empty">Belum ada data. Jadilah yang pertama!</div>';
+            return;
+          }
+          listEl.innerHTML = data
+            .map(
+              (row, i) => `
+            <div class="lb-row ${row.username === cloudUsername ? "me" : ""}">
+              <div class="lb-rank">#${i + 1}</div>
+              <div class="lb-name">${escapeHtml(row.username)}</div>
+              <div class="lb-score">${fmtMoney(row.score)} · Lv${row.level}</div>
+            </div>`,
+            )
+            .join("");
+        }
+
+        function updateCloudPanel() {
+          const statusEl = document.getElementById("cloudStatus");
+          if (!sb) {
+            statusEl.textContent =
+              "Cloud save tidak aktif (Supabase belum dikonfigurasi). Progres tetap tersimpan otomatis di perangkat ini.";
+            return;
+          }
+          if (cloudUsername) {
+            statusEl.textContent =
+              'Masuk sebagai "' +
+              cloudUsername +
+              '"' +
+              (lastCloudSyncAt
+                ? " · sinkron terakhir " +
+                  new Date(lastCloudSyncAt).toLocaleTimeString()
+                : " · belum pernah sinkron");
+          } else {
+            statusEl.textContent =
+              "Belum ada nama pemain. Set nama untuk mulai cloud save & tampil di leaderboard.";
+          }
+        }
+
+        document
+          .getElementById("btnSetUsername")
+          .addEventListener("click", async () => {
+            const val = document
+              .getElementById("cloudUsernameInput")
+              .value.trim();
+            if (val.length < 3 || val.length > 20) {
+              showToast("Nama harus 3-20 karakter.");
+              return;
+            }
+            if (!sb) {
+              showToast("Cloud save belum dikonfigurasi.");
+              return;
+            }
+            const ok = await setCloudUsername(val);
+            if (ok) {
+              showToast("Nama pemain disimpan: " + val);
+              updateCloudPanel();
+            }
+          });
+        document
+          .getElementById("btnCloudSave")
+          .addEventListener("click", cloudSave);
+        document
+          .getElementById("btnCloudLoad")
+          .addEventListener("click", cloudLoad);
+        document
+          .getElementById("btnRefreshLb")
+          .addEventListener("click", fetchLeaderboard);
+
+        // Load progres tersimpan sebelum game mulai berjalan
+        loadLocal();
+
+        // Autosave: lokal tiap ada perubahan (lewat updateUI), plus
+        // sinkron ke cloud berkala jika sudah punya nama pemain.
+        setInterval(() => {
+          saveLocal();
+          if (sb && cloudUsername) cloudSave();
+        }, 60000);
+        window.addEventListener("beforeunload", saveLocal);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") saveLocal();
+        });
+
+        if (sb) {
+          ensureCloudUser().then(() => updateCloudPanel());
+        } else {
+          updateCloudPanel();
+        }
+
+        function loop() {
+          updatePaddlesAuto();
+          updateBalls();
+          draw();
+          if (Math.random() < 0.03) {
+            updateUI();
+            saveLocal();
+          }
+          requestAnimationFrame(loop);
+        }
+        updateUI();
+        requestAnimationFrame(loop);
+      })();
+    </script>
+  </body>
+</html>
