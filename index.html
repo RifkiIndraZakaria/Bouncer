@@ -1875,6 +1875,15 @@
               auto: p.auto,
               dir: p.dir,
             })),
+            // Bola yang sedang aktif memantul di papan, agar tidak hilang
+            // saat browser di-refresh / game dibuka lagi.
+            balls: balls.map((b) => ({
+              x: b.x,
+              y: b.y,
+              vx: b.vx,
+              vy: b.vy,
+              baseValue: b.baseValue,
+            })),
           };
         }
 
@@ -1898,7 +1907,26 @@
               hitFlash: 0,
             }));
           }
-          balls = [];
+          if (Array.isArray(s.balls) && s.balls.length) {
+            balls = s.balls
+              .filter(
+                (b) =>
+                  Number.isFinite(b.x) &&
+                  Number.isFinite(b.y) &&
+                  Number.isFinite(b.vx) &&
+                  Number.isFinite(b.vy),
+              )
+              .map((b) => ({
+                x: clamp(b.x, BALL_R + 4, W - BALL_R - 4),
+                y: clamp(b.y, BALL_R + 4, H - BALL_R - 4),
+                vx: b.vx,
+                vy: b.vy,
+                baseValue: b.baseValue ?? 1,
+              }));
+          } else {
+            balls = [];
+          }
+          if (balls.length) hint.style.display = "none";
           updateUI();
         }
 
