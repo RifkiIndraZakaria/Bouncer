@@ -295,27 +295,6 @@
         margin-left: 4px;
         transition: all 0.15s;
       }
-      .lb-shortcut-btn {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: transparent;
-        border: 1.5px solid var(--gold-dim);
-        color: var(--gold);
-        font-size: 11px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        padding: 0;
-        margin-left: 6px;
-        vertical-align: middle;
-        transition: all 0.15s;
-      }
-      .lb-shortcut-btn:hover {
-        background: rgba(242, 182, 12, 0.12);
-      }
-
       /* ---------- cloud save & leaderboard ---------- */
       .cloud-status {
         font-size: 12.5px;
@@ -755,12 +734,6 @@
             >
               ?
             </button>
-            <button
-              id="leaderboardBtn"
-              class="lb-shortcut-btn"
-              title="Leaderboard"
-              aria-label="Leaderboard"
-            ></button>
           </div>
           <div class="stat-value">BALLS : <span id="ballCount">0</span></div>
         </div>
@@ -1789,7 +1762,6 @@
 
         const modalOverlay = document.getElementById("modalOverlay");
         const helpBtn = document.getElementById("helpBtn");
-        const leaderboardBtn = document.getElementById("leaderboardBtn");
         const modalClose = document.getElementById("modalClose");
 
         function openModal() {
@@ -1829,13 +1801,6 @@
 
         renderUpdateLog();
         renderCredit();
-
-        leaderboardBtn.addEventListener("click", () => {
-          document
-            .querySelector(".leaderboard-panel")
-            .scrollIntoView({ behavior: "smooth", block: "nearest" });
-          fetchLeaderboard();
-        });
 
         // =====================================================
         // SISTEM SAVE: Local (localStorage) + Cloud (Supabase)
