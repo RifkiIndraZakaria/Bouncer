@@ -1956,6 +1956,51 @@
           return error.message || "Terjadi kesalahan tidak diketahui.";
         }
 
+        // Kondisi awal (starter) untuk pemain baru: 5 bola siap pakai,
+        // uang 0, dan 4 paddle dasar di tiap sisi papan.
+        function resetToStarterState() {
+          money = 0;
+          availableBalls = 5;
+          ballMultiplier = 1;
+          ballsBought = 0;
+          profitBought = 0;
+          paddlesBought = 0;
+          mergesBought = 0;
+          totalEarned = 0;
+          paddles = [
+            { side: "top", pos: 0.5, value: 1, auto: true, dir: 1, hitFlash: 0 },
+            {
+              side: "bottom",
+              pos: 0.5,
+              value: 1,
+              auto: true,
+              dir: -1,
+              hitFlash: 0,
+            },
+            {
+              side: "left",
+              pos: 0.5,
+              value: 1,
+              auto: true,
+              dir: 1,
+              hitFlash: 0,
+            },
+            {
+              side: "right",
+              pos: 0.5,
+              value: 1,
+              auto: true,
+              dir: -1,
+              hitFlash: 0,
+            },
+          ];
+          balls = [];
+          floaters = [];
+          particles = [];
+          hint.style.display = "";
+          updateUI();
+        }
+
         async function registerAccount(email, password) {
           if (!sb) {
             showToast("Cloud save belum dikonfigurasi.");
@@ -1969,7 +2014,12 @@
           if (data.session && data.user) {
             cloudUser = data.user;
             await fetchProfileUsername(cloudUser);
-            showToast("Akun berhasil dibuat & masuk!");
+            // Akun baru selalu dimulai dari kondisi starter (5 bola),
+            // terlepas dari progres lokal perangkat sebelumnya (mis. main
+            // sebagai tamu lalu baru daftar).
+            resetToStarterState();
+            saveLocal();
+            showToast("Akun berhasil dibuat & masuk! Kamu mulai dengan 5 bola starter.");
             updateCloudPanel();
           } else if (data.user && !data.session) {
             showToast(
