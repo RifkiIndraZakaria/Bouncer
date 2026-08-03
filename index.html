@@ -591,6 +591,10 @@
         background: rgba(255, 92, 92, 0.15);
         color: var(--danger);
       }
+      .log-tag.issue {
+        background: rgba(214, 193, 76, 0.15);
+        color: #e6dd5e;
+      }
       .log-list {
         margin: 8px 0 0 0;
         padding: 0;
@@ -1738,6 +1742,10 @@
                 type: "fixed",
                 text: "Device compatibility issues",
               },
+              {
+                type: "issue",
+                text: "Login at same time on multiple devices may cause sync issues",
+              },
             ],
           },
         ];
@@ -1941,7 +1949,10 @@
           ) {
             return "Terlalu banyak percobaan kirim email konfirmasi (limit bawaan Supabase sangat kecil). Nonaktifkan 'Confirm email' di dashboard Supabase (Authentication > Providers > Email) agar bisa daftar tanpa verifikasi email, lalu coba lagi.";
           }
-          if (code === "user_already_exists" || msg.includes("already registered")) {
+          if (
+            code === "user_already_exists" ||
+            msg.includes("already registered")
+          ) {
             return "Email ini sudah terdaftar. Coba tombol Masuk.";
           }
           if (
@@ -1968,7 +1979,14 @@
           mergesBought = 0;
           totalEarned = 0;
           paddles = [
-            { side: "top", pos: 0.5, value: 1, auto: true, dir: 1, hitFlash: 0 },
+            {
+              side: "top",
+              pos: 0.5,
+              value: 1,
+              auto: true,
+              dir: 1,
+              hitFlash: 0,
+            },
             {
               side: "bottom",
               pos: 0.5,
@@ -2019,7 +2037,9 @@
             // sebagai tamu lalu baru daftar).
             resetToStarterState();
             saveLocal();
-            showToast("Akun berhasil dibuat & masuk! Kamu mulai dengan 5 bola starter.");
+            showToast(
+              "Akun berhasil dibuat & masuk! Kamu mulai dengan 5 bola starter.",
+            );
             updateCloudPanel();
           } else if (data.user && !data.session) {
             showToast(
