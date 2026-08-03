@@ -97,6 +97,9 @@
         gap: 18px;
         min-height: 0;
       }
+      .leaderboard-panel {
+        order: -1;
+      }
       .board-wrap {
         flex: 1;
         position: relative;
@@ -135,6 +138,54 @@
         flex-direction: column;
         gap: 12px;
         overflow-y: auto;
+      }
+      .side-panel {
+        width: 250px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        min-height: 0;
+      }
+      .side-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+      }
+      .side-panel-title {
+        font-weight: 800;
+        font-size: 12.5px;
+        letter-spacing: 1px;
+        color: var(--gold);
+      }
+      .side-panel-refresh {
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        border-radius: 6px;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .side-panel-refresh:hover {
+        border-color: #3d3d50;
+        color: var(--text);
+      }
+      .side-panel-list {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
       }
       .card {
         display: flex;
@@ -628,12 +679,22 @@
         .main {
           flex-direction: column;
         }
+        .board-wrap {
+          order: -1;
+        }
+        .leaderboard-panel {
+          order: 0;
+        }
         .panel {
           width: 100%;
           flex-direction: row;
           overflow-x: auto;
           overflow-y: hidden;
           padding-bottom: 6px;
+        }
+        .side-panel {
+          width: 100%;
+          max-height: 200px;
         }
         .card {
           min-width: 230px;
@@ -713,6 +774,23 @@
       </div>
 
       <div class="main">
+        <div class="side-panel leaderboard-panel">
+          <div class="side-panel-header">
+            <div class="side-panel-title">🏆 LEADERBOARD</div>
+            <button
+              id="btnRefreshLb"
+              class="side-panel-refresh"
+              title="Refresh"
+              aria-label="Refresh leaderboard"
+            >
+              ↻
+            </button>
+          </div>
+          <div id="leaderboardList" class="side-panel-list">
+            <div class="lb-empty">Memuat...</div>
+          </div>
+        </div>
+
         <div class="board-wrap">
           <canvas id="board"></canvas>
           <div class="hint" id="hint">
@@ -775,7 +853,6 @@
           <div class="tabs">
             <button class="tab-btn active" data-tab="about">About Game</button>
             <button class="tab-btn" data-tab="htp">How to Play</button>
-            <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
             <button class="tab-btn" data-tab="cloud">Cloud Save</button>
             <button class="tab-btn" data-tab="log">Log Update</button>
             <button class="tab-btn" data-tab="credit">Credit</button>
@@ -962,33 +1039,14 @@
                   <b>4. Belanja Upgrade</b>
                   <p>
                     Pakai uang untuk beli
-                    <b style="color: #e8e8ee">Add Ball</b>,
-                    <b style="color: #e8e8ee">Ball Profit</b>,
-                    <b style="color: #e8e8ee">Add Paddle</b>, atau
-                    <b style="color: #e8e8ee">Merge Paddles</b>.
+                    <b style="color: #e8e8ee">Add Ball</b> (tambah stok bola),
+                    <b style="color: #e8e8ee">Ball Profit</b> (nilai bola x2),
+                    <b style="color: #e8e8ee">Add Paddle</b> (paddle baru), atau
+                    <b style="color: #e8e8ee">Merge Paddles</b> (gabung dua
+                    paddle nilai sama di sisi sama jadi satu lebih kuat).
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div class="tab-panel" id="panel-leaderboard">
-              <div class="htp-text" style="margin-bottom: 14px">
-                <b>Leaderboard Global</b>
-                <p>
-                  Peringkat pemain berdasarkan total uang yang pernah dihasilkan
-                  sepanjang permainan (bukan uang yang tersisa).
-                </p>
-              </div>
-              <div id="leaderboardList">
-                <div class="lb-empty">Memuat...</div>
-              </div>
-              <button
-                id="btnRefreshLb"
-                class="cloud-btn"
-                style="margin-top: 12px"
-              >
-                ↻ Refresh
-              </button>
             </div>
 
             <div class="tab-panel" id="panel-cloud">
@@ -1156,8 +1214,8 @@
           );
         }
 
-        const LOGICAL_W = 700;
-        const LOGICAL_H = 460;
+        const LOGICAL_W = 460;
+        const LOGICAL_H = 700;
         const W = LOGICAL_W,
           H = LOGICAL_H;
         let DPR = 1;
@@ -1657,9 +1715,17 @@
 
         const updateLog = [
           {
-            version: "v1.0.2",
+            version: "v1.0.0",
             date: "03/08/2026",
             changes: [
+              {
+                type: "added",
+                text: "Rilis awal: papan pantul bola, 4 paddle di tiap sisi, sistem uang.",
+              },
+              {
+                type: "fixed",
+                text: "Kompatibilitas layout portrait untuk layar HP/Android.",
+              },
               {
                 type: "added",
                 text: "Menu diubah menjadi layout sidebar (kiri) di desktop.",
@@ -1667,26 +1733,6 @@
               {
                 type: "added",
                 text: "VFX: Partikel dan kilatan putih ditambahkan saat paddle memantulkan bola.",
-              },
-            ],
-          },
-          {
-            version: "v1.0.1",
-            date: "03/08/2026",
-            changes: [
-              {
-                type: "fixed",
-                text: "Kompatibilitas layout portrait untuk layar HP/Android.",
-              },
-            ],
-          },
-          {
-            version: "v1.0.0",
-            date: "03/08/2026",
-            changes: [
-              {
-                type: "added",
-                text: "Rilis awal: papan pantul bola, 4 paddle di tiap sisi, sistem uang.",
               },
             ],
           },
@@ -1775,7 +1821,6 @@
             document
               .getElementById("panel-" + btn.dataset.tab)
               .classList.add("active");
-            if (btn.dataset.tab === "leaderboard") fetchLeaderboard();
             if (btn.dataset.tab === "cloud") {
               document.getElementById("cloudUsernameInput").value =
                 cloudUsername;
@@ -1788,17 +1833,9 @@
         renderCredit();
 
         leaderboardBtn.addEventListener("click", () => {
-          openModal();
           document
-            .querySelectorAll(".tab-btn")
-            .forEach((b) =>
-              b.classList.toggle("active", b.dataset.tab === "leaderboard"),
-            );
-          document
-            .querySelectorAll(".tab-panel")
-            .forEach((p) =>
-              p.classList.toggle("active", p.id === "panel-leaderboard"),
-            );
+            .querySelector(".leaderboard-panel")
+            .scrollIntoView({ behavior: "smooth", block: "nearest" });
           fetchLeaderboard();
         });
 
@@ -2089,6 +2126,11 @@
         } else {
           updateCloudPanel();
         }
+
+        // Leaderboard kini selalu terlihat di layar utama, jadi dimuat
+        // langsung saat start dan disegarkan otomatis secara berkala.
+        fetchLeaderboard();
+        setInterval(fetchLeaderboard, 30000);
 
         function loop() {
           updatePaddlesAuto();
