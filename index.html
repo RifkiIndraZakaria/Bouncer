@@ -1173,8 +1173,11 @@
                     <b>Max Ball Stay</b>
                     <span
                       >: Tambah jumlah bola yang bisa stay permanen di papan.
-                      Bola di luar batas ini akan hilang setelah 5 kali memantul
-                      dan perlu di-spawn ulang</span
+                      Bola di luar batas ini cuma "sementara": setiap kali
+                      memantul (kena paddle atau dinding kosong) umurnya
+                      berkurang, dan setelah 5 kali memantul ia otomatis kembali
+                      ke stok bola (bukan hilang total) untuk di-spawn
+                      ulang</span
                     >
                   </div>
                 </div>
@@ -1267,29 +1270,31 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ====================================================
-           PENGINGAT SIMPAN PROGRESS
-           Muncul otomatis setelah 5 menit bermain jika player
-           belum login/daftar akun cloud save.
-      ==================================================== -->
-      <div class="save-reminder" id="saveReminder">
-        <div class="save-reminder-icon">💾</div>
-        <div class="save-reminder-body">
-          <div class="save-reminder-title">Simpan progress kamu!</div>
-          <div class="save-reminder-text">
-            Kamu belum login. Progress hanya tersimpan di perangkat ini dan bisa
-            hilang. Daftar / masuk akun sekarang agar progress aman.
-          </div>
+    <!-- ====================================================
+         PENGINGAT SIMPAN PROGRESS
+         Muncul otomatis setelah 5 menit bermain jika player belum
+         login/daftar akun cloud save. Diletakkan di level body (bukan
+         di dalam #modalOverlay) supaya tetap muncul di tampilan utama
+         game, bukan cuma saat modal Info & Bantuan sedang dibuka.
+    ==================================================== -->
+    <div class="save-reminder" id="saveReminder">
+      <div class="save-reminder-icon">💾</div>
+      <div class="save-reminder-body">
+        <div class="save-reminder-title">Simpan progress kamu!</div>
+        <div class="save-reminder-text">
+          Kamu belum login. Progress hanya tersimpan di perangkat ini dan bisa
+          hilang. Daftar / masuk akun sekarang agar progress aman.
         </div>
-        <div class="save-reminder-actions">
-          <button id="saveReminderLoginBtn" class="save-reminder-btn primary">
-            Simpan Sekarang
-          </button>
-          <button id="saveReminderDismissBtn" class="save-reminder-btn">
-            Nanti
-          </button>
-        </div>
+      </div>
+      <div class="save-reminder-actions">
+        <button id="saveReminderLoginBtn" class="save-reminder-btn primary">
+          Simpan Sekarang
+        </button>
+        <button id="saveReminderDismissBtn" class="save-reminder-btn">
+          Nanti
+        </button>
       </div>
     </div>
 
@@ -1480,8 +1485,10 @@
 
         // TAMBAHAN: batas jumlah bola yang boleh "stay" permanen di papan.
         // Awal main cuma 1 bola yang bisa stay selamanya; bola tambahan
-        // di luar batas ini akan otomatis hilang setelah beberapa kali
-        // memantul (lihat MAX_TEMP_BALL_BOUNCES) dan perlu di-spawn ulang.
+        // di luar batas ini cuma "sementara" -- umurnya berkurang tiap kali
+        // memantul (kena paddle ATAU dinding kosong), dan setelah mencapai
+        // MAX_TEMP_BALL_BOUNCES ia kembali ke stok bola (availableBalls++)
+        // untuk di-spawn ulang, bukan hilang total.
         let maxBallStay = 1;
         let maxBallStayBought = 0;
         const MAX_TEMP_BALL_BOUNCES = 5;
@@ -1708,12 +1715,34 @@
           // AUDIO: SFX bola memantul + SFX dapat uang
           AudioManager.playBounce();
           AudioManager.playCoin();
+        }
 
-          // TAMBAHAN: bola yang bukan bagian dari kuota "stay" permanen
-          // menghitung jumlah pantulannya; setelah mencapai batas, bola
-          // akan ditandai untuk dihapus (lihat updateBalls()).
+        // TAMBAHAN: bola sementara (stayable=false) kehilangan "umur"
+        // (jatah pantulan) setiap kali memantul di sisi papan manapun,
+        // bukan cuma saat kena paddle -- jadi memantul di dinding kosong
+        // pun ikut mempercepat waktunya untuk kembali ke slot bola.
+        function registerBounceLife(ball) {
           if (!ball.stayable) {
             ball.bounces = (ball.bounces || 0) + 1;
+          }
+        }
+
+        // TAMBAHAN: efek partikel "pecah memantul" saat bola sementara
+        // kembali ke slot bola -- burst partikel lebih ramai & menyebar
+        // dibanding partikel biasa saat kena paddle.
+        function spawnVanishBurst(x, y) {
+          for (let i = 0; i < 16; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 3.2 + 2;
+            particles.push({
+              x,
+              y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              life: 1,
+              size: Math.random() * 2.5 + 1.5,
+              color: Math.random() > 0.5 ? "#5ee6c9" : "#ffffff",
+            });
           }
         }
 
@@ -1730,30 +1759,38 @@
               b.x = BALL_R;
               const p = findPaddleOnSide("left", b.y);
               if (p) earn(b, p);
+              registerBounceLife(b);
               b.vx = Math.abs(b.vx);
             } else if (b.x + BALL_R >= W) {
               b.x = W - BALL_R;
               const p = findPaddleOnSide("right", b.y);
               if (p) earn(b, p);
+              registerBounceLife(b);
               b.vx = -Math.abs(b.vx);
             }
             if (b.y - BALL_R <= 0) {
               b.y = BALL_R;
               const p = findPaddleOnSide("top", b.x);
               if (p) earn(b, p);
+              registerBounceLife(b);
               b.vy = Math.abs(b.vy);
             } else if (b.y + BALL_R >= H) {
               b.y = H - BALL_R;
               const p = findPaddleOnSide("bottom", b.x);
               if (p) earn(b, p);
+              registerBounceLife(b);
               b.vy = -Math.abs(b.vy);
             }
 
-            // TAMBAHAN: hapus bola sementara yang sudah melewati batas
-            // pantulan; perlu di-spawn ulang oleh pemain (tap papan lagi).
+            // TAMBAHAN: bola sementara yang sudah melewati batas pantulan
+            // tidak benar-benar hilang -- ia "pecah" jadi partikel dan
+            // kembali sebagai stok bola siap pakai (availableBalls++),
+            // jadi pemain tinggal tap papan lagi untuk spawn ulang.
             if (!b.stayable && b.bounces >= MAX_TEMP_BALL_BOUNCES) {
-              addFloater(b.x, b.y, "Bola Hilang!", "#ff5c5c");
+              spawnVanishBurst(b.x, b.y);
+              availableBalls++;
               balls.splice(i, 1);
+              updateUI();
             }
           }
         }
