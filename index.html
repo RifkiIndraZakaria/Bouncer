@@ -35,6 +35,25 @@
       * {
         box-sizing: border-box;
       }
+      /* TAMBAHAN: sembunyikan scrollbar bawaan browser di semua area yang
+         bisa di-scroll (panel upgrade, leaderboard, tab menu modal, dan
+         konten tab modal), tapi scroll (mouse wheel / drag / swipe / touch)
+         tetap berfungsi normal seperti biasa. */
+      .panel,
+      .side-panel-list,
+      .tabs,
+      .tab-panels {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE / legacy Edge */
+      }
+      .panel::-webkit-scrollbar,
+      .side-panel-list::-webkit-scrollbar,
+      .tabs::-webkit-scrollbar,
+      .tab-panels::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera (WebKit/Blink) */
+        width: 0;
+        height: 0;
+      }
       html,
       body {
         margin: 0;
