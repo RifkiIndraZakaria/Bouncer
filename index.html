@@ -8,6 +8,18 @@
     />
     <title>Idle Bouncer</title>
     <link rel="icon" type="image/png" href="Icon.png" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0a0a10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Idle Bouncer" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
     <style>
       :root {
         --bg: #0a0a10;
@@ -1748,6 +1760,20 @@
 
         const updateLog = [
           {
+            version: "v1.0.1",
+            date: "04/08/2026",
+            changes: [
+              {
+                type: "added",
+                text: "PWA Support",
+              },
+              {
+                type: "issue",
+                text: "Login at same time on multiple devices may cause sync issues",
+              },
+            ],
+          },
+          {
             version: "v1.0.0",
             date: "03/08/2026",
             changes: [
@@ -2462,6 +2488,15 @@
         updateUI();
         requestAnimationFrame(loop);
       })();
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./service-worker.js")
+            .catch((err) => console.error("SW registration failed:", err));
+        });
+      }
     </script>
   </body>
 </html>
