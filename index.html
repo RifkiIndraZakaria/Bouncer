@@ -461,6 +461,17 @@
         color: #1a1305;
         border-color: var(--gold);
       }
+      /* TAMBAHAN: gaya tombol untuk aksi berbahaya/permanen, dipakai
+         oleh tombol Reset Progress di tab Cloud Save. */
+      .cloud-btn.danger {
+        background: transparent;
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .cloud-btn.danger:hover {
+        background: var(--danger);
+        color: #1a0505;
+      }
       .lb-empty {
         font-size: 12.5px;
         color: var(--text-dim);
@@ -1259,6 +1270,15 @@
                   </button>
                   <button id="btnLogout" class="cloud-btn">Logout</button>
                 </div>
+
+                <!-- TAMBAHAN: tombol Reset Progress untuk player yang
+                     login dan ingin kembali ke progress awal (starter). -->
+                <div style="height: 10px"></div>
+                <div class="cloud-actions">
+                  <button id="btnResetProgress" class="cloud-btn danger">
+                    ⟲ Reset Progress
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1307,7 +1327,7 @@
           Save Now
         </button>
         <button id="saveReminderDismissBtn" class="save-reminder-btn">
-          Nanti
+          Later
         </button>
       </div>
     </div>
@@ -1987,7 +2007,7 @@
               updateUI();
               hint.style.display = "none";
             } else {
-              showToast('Tidak ada bola tersedia. Beli "Add Ball" dulu.');
+              showToast("No balls available");
             }
           }
           downPos = null;
@@ -2074,7 +2094,7 @@
           const coverage = sides.map(sideCoverage);
           const minCoverage = Math.min(...coverage);
           if (minCoverage >= MAX_SIDE_COVERAGE) {
-            showToast("Semua sisi papan sudah penuh paddle.");
+            showToast("All paddle sides are full.");
             flash(btnAddPaddle);
             return;
           }
@@ -2112,7 +2132,7 @@
             }
           }
           if (!found) {
-            showToast("Tidak ada paddle sejenis untuk digabung.");
+            showToast("No matching paddles to merge.");
             flash(btnMerge);
             return;
           }
@@ -2138,7 +2158,7 @@
             maxBallStayBought++;
             AudioManager.playUpgrade();
             updateUI();
-            showToast("Max Ball Stay sekarang: " + maxBallStay);
+            showToast("Max Ball Stay now: " + maxBallStay);
           } else flash(btnMaxBallStay);
         });
 
@@ -2156,7 +2176,9 @@
           document.getElementById("priceMaxBallStay").textContent =
             fmtMoney(costMaxBallStay());
           document.getElementById("maxBallStayDesc").textContent =
-            "Saat ini: " + maxBallStay + " bola bisa stay permanen di papan";
+            "Currently: " +
+            maxBallStay +
+            " balls can stay permanently on the board";
 
           setAfford(btnAddBall, money >= costAddBall());
           setAfford(btnBallProfit, money >= costProfit());
@@ -2262,6 +2284,8 @@
               label: "Instagram",
               url: "https://instagram.com/scarrotles.work",
             },
+            // TAMBAHAN: link Tako untuk player yang ingin support developer.
+            { label: "Support via Tako", url: "https://tako.id/Scarrotles" },
           ],
         };
 
@@ -2739,7 +2763,7 @@
 
         async function cloudLoad({ silent = false } = {}) {
           if (!sb) {
-            if (!silent) showToast("Cloud save belum dikonfigurasi.");
+            if (!silent) showToast("Cloud save is not configured yet.");
             return false;
           }
           if (!cloudUser) {
@@ -2771,10 +2795,10 @@
           const listEl = document.getElementById("leaderboardList");
           if (!sb) {
             listEl.innerHTML =
-              '<div class="lb-empty">Leaderboard belum dikonfigurasi. Lihat README.md untuk setup Supabase.</div>';
+              '<div class="lb-empty">Leaderboard is not configured yet. See README.md for Supabase setup.</div>';
             return;
           }
-          listEl.innerHTML = '<div class="lb-empty">Memuat...</div>';
+          listEl.innerHTML = '<div class="lb-empty">Loading...</div>';
           const { data, error } = await sb
             .from("leaderboard")
             .select("username, score, level")
@@ -2787,7 +2811,7 @@
           }
           if (!data || !data.length) {
             listEl.innerHTML =
-              '<div class="lb-empty">Belum ada data. Jadilah yang pertama!</div>';
+              '<div class="lb-empty">No data available. Be the first!</div>';
             return;
           }
           listEl.innerHTML = data
@@ -2808,7 +2832,7 @@
           const accountSection = document.getElementById("accountSection");
           if (!sb) {
             statusEl.textContent =
-              "Cloud save tidak aktif (Supabase belum dikonfigurasi). Progres tetap tersimpan otomatis di perangkat ini.";
+              "Cloud save is not configured yet (Supabase not configured). Progress is still saved automatically on this device.";
             authSection.style.display = "none";
             accountSection.style.display = "none";
             return;
@@ -2817,15 +2841,15 @@
             authSection.style.display = "none";
             accountSection.style.display = "block";
             statusEl.textContent =
-              "Masuk sebagai " +
+              "Logged in as " +
               cloudUser.email +
               (cloudUsername
-                ? ' · nama pemain "' + cloudUsername + '"'
-                : " · belum set nama pemain") +
+                ? ' · name "' + cloudUsername + '"'
+                : " · name not set") +
               (lastCloudSyncAt
-                ? " · sinkron terakhir " +
+                ? " · last sync " +
                   new Date(lastCloudSyncAt).toLocaleTimeString()
-                : " · belum pernah sinkron");
+                : " · never synced");
           } else {
             authSection.style.display = "block";
             accountSection.style.display = "none";
@@ -2845,7 +2869,7 @@
               return;
             }
             if (!sb) {
-              showToast("Cloud save belum dikonfigurasi.");
+              showToast("Cloud save is not configured yet.");
               return;
             }
             if (!cloudUser) {
@@ -2901,8 +2925,43 @@
           .getElementById("btnLogout")
           .addEventListener("click", logoutAccount);
 
-        // Load progres tersimpan sebelum game mulai berjalan
-        loadLocal();
+        // TAMBAHAN: Reset Progress untuk player yang sedang login dan
+        // ingin kembali ke kondisi awal (starter). Minta konfirmasi dulu
+        // karena aksi ini permanen, lalu simpan hasil reset ke cloud
+        // (kalau memungkinkan) supaya progres lama tidak "kembali" lagi
+        // saat login ulang di device lain.
+        document
+          .getElementById("btnResetProgress")
+          .addEventListener("click", async () => {
+            if (!cloudUser) {
+              showToast("Silakan masuk akun dulu di tab Cloud Save.");
+              return;
+            }
+            const sure = window.confirm(
+              "Yakin ingin reset progress ke kondisi awal? Aksi ini tidak bisa dibatalkan dan akan menghapus progres tersimpan (termasuk di cloud).",
+            );
+            if (!sure) return;
+            resetToStarterState();
+            saveLocal();
+            if (sb && cloudUsername) {
+              await cloudSave({ silent: true });
+            }
+            showToast("Progress berhasil direset ke kondisi awal.");
+            updateCloudPanel();
+          });
+
+        // PERBAIKAN: progres localStorage HANYA dimuat kalau ada sistem
+        // cloud save (sb terkonfigurasi). Kalau tidak, tetap pakai
+        // localStorage seperti sebelumnya (satu-satunya cara menyimpan
+        // progress). Kalau cloud save tersedia, keputusan load ditunda
+        // sampai status login diketahui (lihat blok sb.auth.getSession()
+        // di bawah) -> player yang BELUM login akan selalu mulai dari
+        // kondisi starter tiap kali browser di-refresh, sementara player
+        // yang SUDAH login akan menarik progres dari cloud (dengan
+        // localStorage cuma sebagai fallback jika cloud gagal dimuat).
+        if (!sb) {
+          loadLocal();
+        }
 
         // Autosave: lokal tiap ada perubahan (lewat updateUI), plus
         // sinkron ke cloud berkala jika sudah punya nama pemain.
@@ -2976,8 +3035,15 @@
               // sudah pernah login akun ini) -> tarik progres terbaru dari
               // cloud dulu sebelum melanjutkan, supaya selalu sinkron
               // dengan device lain yang mungkin menyimpan progres baru.
-              await cloudLoad({ silent: true });
+              const loaded = await cloudLoad({ silent: true });
+              // Fallback: kalau gagal ambil dari cloud (mis. offline),
+              // pakai save lokal terakhir daripada mulai dari nol.
+              if (!loaded) loadLocal();
             }
+            // Kalau tidak ada sesi (player belum login / tamu), TIDAK
+            // memuat localStorage sama sekali -> papan tetap di kondisi
+            // starter (default variable di awal script), sesuai
+            // permintaan: progress tamu reset tiap browser di-refresh.
             updateCloudPanel();
           });
         } else {
