@@ -958,9 +958,9 @@
           <div class="card" id="btnMaxBallStay">
             <div class="icon">∞</div>
             <div class="card-body">
-              <div class="card-title">MAX BALL STAY</div>
+              <div class="card-title">MAX BALL</div>
               <div class="card-desc" id="maxBallStayDesc">
-                Saat ini: 1 bola bisa stay permanen di papan
+                Permanent Ball that stays alive
               </div>
             </div>
             <div class="card-price" id="priceMaxBallStay">-</div>
@@ -973,7 +973,7 @@
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-header">
-          <div class="modal-title">INFO &amp; BANTUAN</div>
+          <div class="modal-title">HELP &amp; INFO</div>
           <button class="modal-close" id="modalClose">✕</button>
         </div>
 
@@ -1042,13 +1042,12 @@
                 <circle cx="260" cy="55" r="5" fill="#fff" opacity="0.6" />
               </svg>
               <div class="about-desc">
-                <b>Idle Bouncer</b> adalah game idle/clicker kasual di mana
-                tujuan utamamu adalah memaksimalkan pantulan bola. Mulai dengan
-                Starter ball yang bermunculan dan saksikan layar komputermu
-                dipenuhi dengan bola memantul dan angka poin yang terus meroket.
-                Upgrade paddle-mu, tambah jumlah bola, dan tingkatkan kemampuan
-                untuk memaksimalkan keuntungan untuk mencapai Top 1 di
-                Leaderboard!.
+                <b>Idle Bouncer</b> is a casual idle/clicker game where your
+                main goal is to maximize the number of ball bounces. Start with
+                the Starter Ball that appears and watch your computer screen
+                fill with bouncing balls and your points skyrocket. Upgrade your
+                paddle, increase the number of balls, and improve your skills to
+                maximize your profits and reach the top of the Leaderboard!.
               </div>
             </div>
 
@@ -1073,10 +1072,10 @@
                   </svg>
                 </div>
                 <div class="htp-text">
-                  <b>1. Jatuhkan Bola</b>
+                  <b>1. Drop the Ball</b>
                   <p>
-                    Klik di area papan untuk menjatuhkan bola baru. Selama masih
-                    memiliki bola yang belum di gunakan
+                    Click on the board to drop a new ball. As long as you have
+                    balls available, you can keep dropping them.
                   </p>
                 </div>
               </div>
@@ -1101,10 +1100,10 @@
                   </svg>
                 </div>
                 <div class="htp-text">
-                  <b>2. Hasilkan Uang dari Paddle</b>
+                  <b>2. Generate Money from Paddle</b>
                   <p>
-                    Saat bola menabrak paddle (bar kuning), kamu dapat uang.
-                    Menabrak dinding tidak menghasilkan apa-apa.
+                    When the ball hits the paddle (yellow bar), you earn money.
+                    Hitting the walls doesn't generate anything.
                   </p>
                 </div>
               </div>
@@ -1131,10 +1130,10 @@
                   </svg>
                 </div>
                 <div class="htp-text">
-                  <b>3. Gerakkan Paddle</b>
+                  <b>3. Move the Paddle</b>
                   <p>
-                    Drag paddle untuk menggerakkan manual. Klik untuk beralih
-                    mode Auto-Move.
+                    Drag the paddle to move it manually. Click to toggle
+                    Auto-Move mode.
                   </p>
                 </div>
               </div>
@@ -1161,42 +1160,38 @@
                   </svg>
                 </div>
                 <div class="htp-text">
-                  <b>4. Belanja Upgrade</b>
+                  <b>4. Buy Upgrades</b>
 
-                  <p>Pakai uang untuk beli</p>
+                  <p>Use your money to purchase upgrades</p>
 
                   <div class="upgrade-item">
                     <b>Add Ball</b>
-                    <span>: Tambah stok bola</span>
+                    <span>: Add to ball stock</span>
                   </div>
 
                   <div class="upgrade-item">
                     <b>Ball Profit</b>
-                    <span>: Nilai bola x2</span>
+                    <span>: Double ball value</span>
                   </div>
 
                   <div class="upgrade-item">
                     <b>Add Paddle</b>
-                    <span>: Paddle baru</span>
+                    <span>: New paddle</span>
                   </div>
 
                   <div class="upgrade-item">
                     <b>Merge Paddles</b>
                     <span
-                      >: Gabung dua paddle nilai dan sisi yang sama jadi satu
-                      (nilai naik urut +1, mis. 1+1=2, 2+2=3)</span
-                    >
+                      >: Combine two paddles with the same value and side into
+                      one
+                    </span>
                   </div>
 
                   <div class="upgrade-item">
                     <b>Max Ball Stay</b>
                     <span
-                      >: Tambah jumlah bola yang bisa stay permanen di papan.
-                      Bola di luar batas ini cuma "sementara": setiap kali
-                      memantul (kena paddle atau dinding kosong) umurnya
-                      berkurang, dan setelah 5 kali memantul ia otomatis kembali
-                      ke stok bola (bukan hilang total) untuk di-spawn
-                      ulang</span
+                      >: Increase the number of balls that can permanently stay.
+                      Balls outside this limit are "temporary"</span
                     >
                   </div>
                 </div>
@@ -1205,15 +1200,16 @@
 
             <div class="tab-panel" id="panel-cloud">
               <div class="htp-text" style="margin-bottom: 14px">
-                <b>Cloud Save & Sinkronisasi</b>
+                <b>Cloud Save & Synchronization</b>
                 <p>
-                  Buat akun dengan email & password agar progresmu bisa
-                  disinkronkan dan dilanjutkan di perangkat lain, serta tampil
-                  di leaderboard global. Progres tetap otomatis tersimpan di
-                  perangkat ini meski tidak login.
+                  Create an account with email & password so your progress can
+                  be synchronized and continued on other devices, as well as
+                  displayed on the global leaderboard. Progress is still
+                  automatically saved on this device even if you're not logged
+                  in.
                 </p>
               </div>
-              <div id="cloudStatus" class="cloud-status">Memuat status...</div>
+              <div id="cloudStatus" class="cloud-status">Loading status...</div>
 
               <div id="authSection">
                 <div class="cloud-form">
@@ -1230,15 +1226,15 @@
                     id="authPasswordInput"
                     class="cloud-input"
                     type="password"
-                    placeholder="Password (min. 6 karakter)"
+                    placeholder="Password (min. 6 characters)"
                     autocomplete="current-password"
                   />
                 </div>
                 <div class="cloud-actions">
                   <button id="btnRegister" class="cloud-btn primary">
-                    Daftar Akun
+                    Sign Up
                   </button>
-                  <button id="btnLogin" class="cloud-btn">Masuk</button>
+                  <button id="btnLogin" class="cloud-btn">Login</button>
                 </div>
               </div>
 
@@ -1249,20 +1245,20 @@
                     class="cloud-input"
                     type="text"
                     maxlength="20"
-                    placeholder="Nama pemain (3-20 karakter)"
+                    placeholder="Player Name (3-20 characters)"
                   />
                   <button id="btnSetUsername" class="cloud-btn">
-                    Simpan Nama
+                    Save Name
                   </button>
                 </div>
                 <div class="cloud-actions">
                   <button id="btnCloudSave" class="cloud-btn primary">
-                    ☁ Simpan ke Cloud
+                    ☁ Save to Cloud
                   </button>
                   <button id="btnCloudLoad" class="cloud-btn">
-                    ⭯ Muat dari Cloud
+                    ⭯ Load from Cloud
                   </button>
-                  <button id="btnLogout" class="cloud-btn">Keluar Akun</button>
+                  <button id="btnLogout" class="cloud-btn">Logout</button>
                 </div>
               </div>
             </div>
@@ -1301,15 +1297,15 @@
     <div class="save-reminder" id="saveReminder">
       <div class="save-reminder-icon">💾</div>
       <div class="save-reminder-body">
-        <div class="save-reminder-title">Simpan progress kamu!</div>
+        <div class="save-reminder-title">Save your progress!</div>
         <div class="save-reminder-text">
-          Kamu belum login. Progress hanya tersimpan di perangkat ini dan bisa
-          hilang. Daftar / masuk akun sekarang agar progress aman.
+          You are not logged in. Progress is only saved on this device and can
+          be lost. Sign up or log in now to keep your progress safe.
         </div>
       </div>
       <div class="save-reminder-actions">
         <button id="saveReminderLoginBtn" class="save-reminder-btn primary">
-          Simpan Sekarang
+          Save Now
         </button>
         <button id="saveReminderDismissBtn" class="save-reminder-btn">
           Nanti
@@ -2196,6 +2192,18 @@
               {
                 type: "added",
                 text: "Music & Sfx",
+              },
+              {
+                type: "added",
+                text: "Max ball stay upgrade",
+              },
+              {
+                type: "fixed",
+                text: "Language consistency and shorten description text",
+              },
+              {
+                type: "fixed",
+                text: "Balancing gameplay and upgrade cost",
               },
               {
                 type: "issue",
