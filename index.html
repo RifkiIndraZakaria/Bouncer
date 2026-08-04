@@ -935,6 +935,17 @@
             </div>
             <div class="card-price" id="priceMerge">-</div>
           </div>
+
+          <div class="card" id="btnMaxBallStay">
+            <div class="icon">∞</div>
+            <div class="card-body">
+              <div class="card-title">MAX BALL STAY</div>
+              <div class="card-desc" id="maxBallStayDesc">
+                Saat ini: 1 bola bisa stay permanen di papan
+              </div>
+            </div>
+            <div class="card-price" id="priceMaxBallStay">-</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1153,8 +1164,17 @@
                   <div class="upgrade-item">
                     <b>Merge Paddles</b>
                     <span
-                      >: Gabung dua paddle nilai dan sisi yang sama jadi
-                      satu</span
+                      >: Gabung dua paddle nilai dan sisi yang sama jadi satu
+                      (nilai naik urut +1, mis. 1+1=2, 2+2=3)</span
+                    >
+                  </div>
+
+                  <div class="upgrade-item">
+                    <b>Max Ball Stay</b>
+                    <span
+                      >: Tambah jumlah bola yang bisa stay permanen di papan.
+                      Bola di luar batas ini akan hilang setelah 5 kali memantul
+                      dan perlu di-spawn ulang</span
                     >
                   </div>
                 </div>
@@ -1458,6 +1478,14 @@
         let mergesBought = 0;
         let totalEarned = 0;
 
+        // TAMBAHAN: batas jumlah bola yang boleh "stay" permanen di papan.
+        // Awal main cuma 1 bola yang bisa stay selamanya; bola tambahan
+        // di luar batas ini akan otomatis hilang setelah beberapa kali
+        // memantul (lihat MAX_TEMP_BALL_BOUNCES) dan perlu di-spawn ulang.
+        let maxBallStay = 1;
+        let maxBallStayBought = 0;
+        const MAX_TEMP_BALL_BOUNCES = 5;
+
         const PADDLE_THICK = 14;
         const PADDLE_LEN = 78;
         const BALL_R = 7;
@@ -1490,17 +1518,23 @@
         // TAMBAHAN: Array untuk menampung visual efek partikel
         let particles = [];
 
+        // Basis eksponen upgrade diperbesar supaya jarak (gap) harga
+        // antar level pembelian jadi jauh lebih terasa/mahal seiring
+        // makin banyak dibeli, dibanding sebelumnya.
         function costAddBall() {
-          return Math.round(45 * Math.pow(1.55, ballsBought));
+          return Math.round(45 * Math.pow(1.75, ballsBought));
         }
         function costProfit() {
-          return Math.round(300 * Math.pow(1.9, profitBought));
+          return Math.round(300 * Math.pow(2.15, profitBought));
         }
         function costAddPaddle() {
-          return Math.round(140 * Math.pow(1.6, paddlesBought));
+          return Math.round(140 * Math.pow(1.85, paddlesBought));
         }
         function costMerge() {
-          return Math.round(90 * Math.pow(1.45, mergesBought));
+          return Math.round(90 * Math.pow(1.7, mergesBought));
+        }
+        function costMaxBallStay() {
+          return Math.round(500 * Math.pow(2.3, maxBallStayBought));
         }
 
         function fmtMoney(n) {
@@ -1602,12 +1636,23 @@
         function spawnBall(x, y) {
           const angle = Math.random() * Math.PI * 2;
           const speed = 2.4 + Math.random() * 1.6;
+          // TAMBAHAN: hanya sejumlah `maxBallStay` bola yang boleh stay
+          // permanen di papan. Bola berikutnya di luar kuota itu ditandai
+          // sementara (stayable=false) dan akan hilang otomatis setelah
+          // MAX_TEMP_BALL_BOUNCES kali memantul.
+          const stayableCount = balls.reduce(
+            (n, b) => n + (b.stayable ? 1 : 0),
+            0,
+          );
+          const stayable = stayableCount < maxBallStay;
           balls.push({
             x: clamp(x, BALL_R + 4, W - BALL_R - 4),
             y: clamp(y, BALL_R + 4, H - BALL_R - 4),
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             baseValue: 1,
+            stayable,
+            bounces: 0,
           });
         }
 
@@ -1663,10 +1708,21 @@
           // AUDIO: SFX bola memantul + SFX dapat uang
           AudioManager.playBounce();
           AudioManager.playCoin();
+
+          // TAMBAHAN: bola yang bukan bagian dari kuota "stay" permanen
+          // menghitung jumlah pantulannya; setelah mencapai batas, bola
+          // akan ditandai untuk dihapus (lihat updateBalls()).
+          if (!ball.stayable) {
+            ball.bounces = (ball.bounces || 0) + 1;
+          }
         }
 
         function updateBalls() {
-          for (const b of balls) {
+          // TAMBAHAN: iterasi mundur pakai index supaya bola sementara
+          // (stayable=false) yang sudah mencapai batas pantulan bisa
+          // langsung dihapus (splice) dengan aman dalam loop yang sama.
+          for (let i = balls.length - 1; i >= 0; i--) {
+            const b = balls[i];
             b.x += b.vx;
             b.y += b.vy;
 
@@ -1691,6 +1747,13 @@
               const p = findPaddleOnSide("bottom", b.x);
               if (p) earn(b, p);
               b.vy = -Math.abs(b.vy);
+            }
+
+            // TAMBAHAN: hapus bola sementara yang sudah melewati batas
+            // pantulan; perlu di-spawn ulang oleh pemain (tap papan lagi).
+            if (!b.stayable && b.bounces >= MAX_TEMP_BALL_BOUNCES) {
+              addFloater(b.x, b.y, "Bola Hilang!", "#ff5c5c");
+              balls.splice(i, 1);
             }
           }
         }
@@ -1730,11 +1793,24 @@
           for (const b of balls) {
             ctx.beginPath();
             ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-            ctx.fillStyle = "#fff";
-            ctx.shadowColor = "rgba(242,182,12,0.6)";
+            // TAMBAHAN: bola sementara (bukan kuota "stay") digambar
+            // sedikit transparan agar pemain sadar bola ini akan hilang.
+            if (!b.stayable) {
+              const remaining = Math.max(
+                0,
+                MAX_TEMP_BALL_BOUNCES - (b.bounces || 0),
+              );
+              ctx.globalAlpha = 0.45 + 0.11 * remaining;
+              ctx.fillStyle = "#ffdca0";
+              ctx.shadowColor = "rgba(255,92,92,0.6)";
+            } else {
+              ctx.fillStyle = "#fff";
+              ctx.shadowColor = "rgba(242,182,12,0.6)";
+            }
             ctx.shadowBlur = 8;
             ctx.fill();
             ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
           }
 
           // TAMBAHAN: Render Partikel Efek Visual
@@ -1898,6 +1974,7 @@
         const btnBallProfit = document.getElementById("btnBallProfit");
         const btnAddPaddle = document.getElementById("btnAddPaddle");
         const btnMerge = document.getElementById("btnMerge");
+        const btnMaxBallStay = document.getElementById("btnMaxBallStay");
 
         function trySpend(cost) {
           if (money >= cost) {
@@ -1991,13 +2068,27 @@
           const cost = costMerge();
           if (trySpend(cost)) {
             const [i, j] = found;
-            paddles[i].value += paddles[j].value;
+            // PERBAIKAN: sebelumnya nilai dijumlahkan (1+1=2, 2+2=4, ...)
+            // sehingga naik kelipatan dua. Sekarang naik urut +1 saja
+            // (1+1=2, 2+2=3, 3+3=4, dst) sesuai permintaan.
+            paddles[i].value += 1;
             paddles[i].pos = (paddles[i].pos + paddles[j].pos) / 2;
             paddles.splice(j, 1);
             mergesBought++;
             AudioManager.playUpgrade();
             updateUI();
           } else flash(btnMerge);
+        });
+
+        btnMaxBallStay.addEventListener("click", () => {
+          const cost = costMaxBallStay();
+          if (trySpend(cost)) {
+            maxBallStay++;
+            maxBallStayBought++;
+            AudioManager.playUpgrade();
+            updateUI();
+            showToast("Max Ball Stay sekarang: " + maxBallStay);
+          } else flash(btnMaxBallStay);
         });
 
         function updateUI() {
@@ -2011,14 +2102,23 @@
             fmtMoney(costAddPaddle());
           document.getElementById("priceMerge").textContent =
             fmtMoney(costMerge());
+          document.getElementById("priceMaxBallStay").textContent =
+            fmtMoney(costMaxBallStay());
+          document.getElementById("maxBallStayDesc").textContent =
+            "Saat ini: " + maxBallStay + " bola bisa stay permanen di papan";
 
           setAfford(btnAddBall, money >= costAddBall());
           setAfford(btnBallProfit, money >= costProfit());
           setAfford(btnAddPaddle, money >= costAddPaddle());
           setAfford(btnMerge, money >= costMerge());
+          setAfford(btnMaxBallStay, money >= costMaxBallStay());
 
           const totalPurchases =
-            ballsBought + profitBought + paddlesBought + mergesBought;
+            ballsBought +
+            profitBought +
+            paddlesBought +
+            mergesBought +
+            maxBallStayBought;
           const level = Math.floor(totalPurchases / 5) + 1;
           const progress = ((totalPurchases % 5) / 5) * 100;
           document.getElementById("lvText").textContent = "Level " + level;
@@ -2198,6 +2298,8 @@
             profitBought,
             paddlesBought,
             mergesBought,
+            maxBallStay,
+            maxBallStayBought,
             totalEarned,
             paddles: paddles.map((p) => ({
               side: p.side,
@@ -2214,6 +2316,8 @@
               vx: b.vx,
               vy: b.vy,
               baseValue: b.baseValue,
+              stayable: b.stayable,
+              bounces: b.bounces,
             })),
           };
         }
@@ -2227,6 +2331,8 @@
           profitBought = s.profitBought ?? 0;
           paddlesBought = s.paddlesBought ?? 0;
           mergesBought = s.mergesBought ?? 0;
+          maxBallStay = s.maxBallStay ?? 1;
+          maxBallStayBought = s.maxBallStayBought ?? 0;
           totalEarned = s.totalEarned ?? money;
           if (Array.isArray(s.paddles) && s.paddles.length) {
             paddles = s.paddles.map((p) => ({
@@ -2253,6 +2359,11 @@
                 vx: b.vx,
                 vy: b.vy,
                 baseValue: b.baseValue ?? 1,
+                // Save lama belum punya field ini -> anggap stayable=true
+                // (permanen) supaya bola yang sudah ada tidak tiba-tiba
+                // hilang gara-gara update ini.
+                stayable: b.stayable ?? true,
+                bounces: b.bounces ?? 0,
               }));
           } else {
             balls = [];
@@ -2336,6 +2447,8 @@
           profitBought = 0;
           paddlesBought = 0;
           mergesBought = 0;
+          maxBallStay = 1;
+          maxBallStayBought = 0;
           totalEarned = 0;
           paddles = [
             {
@@ -2516,7 +2629,12 @@
           const nowIso = new Date().toISOString();
           const level =
             Math.floor(
-              (ballsBought + profitBought + paddlesBought + mergesBought) / 5,
+              (ballsBought +
+                profitBought +
+                paddlesBought +
+                mergesBought +
+                maxBallStayBought) /
+                5,
             ) + 1;
           const { data: existingLb } = await sb
             .from("leaderboard")
