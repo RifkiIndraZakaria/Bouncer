@@ -775,6 +775,14 @@
             >
               ?
             </button>
+            <button
+              id="muteBtn"
+              class="help-btn"
+              title="Musik & Suara"
+              aria-label="Musik & Suara"
+            >
+              🔊
+            </button>
           </div>
           <div class="stat-value">BALLS : <span id="ballCount">0</span></div>
         </div>
@@ -1178,6 +1186,157 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
+    <!-- ====================================================
+         AUDIO MANAGER
+         Letakkan file audio kamu di folder yang sama dengan
+         index.html, dengan nama berikut (bisa .mp3 atau .wav,
+         cukup ganti ekstensi di daftar SOURCES di bawah):
+           - bgm.mp3      -> musik latar (loop)
+           - bounce.mp3   -> SFX bola memantul di paddle
+           - coin.mp3     -> SFX dapat uang
+           - upgrade.mp3  -> SFX beli/upgrade (add ball, add
+                              paddle, profit, merge)
+         Kalau file belum ada, game tetap berjalan normal
+         (audio yang gagal dimuat akan diabaikan otomatis).
+    ==================================================== -->
+    <script>
+      const AudioManager = (function () {
+        const SOURCES = {
+          bgm: "bgm.mp3",
+          bounce: "bounce.mp3",
+          coin: "coin.mp3",
+          upgrade: "upgrade.mp3",
+        };
+
+        // Volume dasar tiap suara (0.0 - 1.0)
+        const VOLUME = {
+          bgm: 0.35,
+          bounce: 0.5,
+          coin: 0.6,
+          upgrade: 0.7,
+        };
+
+        // Jeda minimum antar-play untuk SFX yang sering terpicu
+        // (mencegah suara menumpuk saat banyak bola memantul cepat)
+        const THROTTLE_MS = {
+          bounce: 40,
+          coin: 40,
+        };
+
+        let muted = localStorage.getItem("ib_muted") === "1";
+        const lastPlayed = {};
+        const sfxPools = {}; // beberapa instance Audio per efek agar bisa overlap
+        const POOL_SIZE = 6;
+        let bgmEl = null;
+        let unlocked = false;
+
+        function buildPool(key, src) {
+          const pool = [];
+          for (let i = 0; i < POOL_SIZE; i++) {
+            const a = new Audio(src);
+            a.preload = "auto";
+            a.volume = VOLUME[key] ?? 1;
+            a.addEventListener("error", () => {
+              // File belum ada / gagal dimuat — abaikan diam-diam
+            });
+            pool.push(a);
+          }
+          return pool;
+        }
+
+        function init() {
+          sfxPools.bounce = buildPool("bounce", SOURCES.bounce);
+          sfxPools.coin = buildPool("coin", SOURCES.coin);
+          sfxPools.upgrade = buildPool("upgrade", SOURCES.upgrade);
+
+          bgmEl = new Audio(SOURCES.bgm);
+          bgmEl.loop = true;
+          bgmEl.preload = "auto";
+          bgmEl.volume = VOLUME.bgm;
+          bgmEl.addEventListener("error", () => {
+            // bgm.mp3 belum ada — abaikan diam-diam
+          });
+
+          // Browser memblokir autoplay audio sebelum ada interaksi
+          // pengguna. Kita "buka kunci" audio pada sentuhan/klik
+          // pertama, lalu jalankan musik latar (jika belum di-mute).
+          const unlock = () => {
+            if (unlocked) return;
+            unlocked = true;
+            if (!muted) playBgm();
+            window.removeEventListener("pointerdown", unlock);
+            window.removeEventListener("keydown", unlock);
+          };
+          window.addEventListener("pointerdown", unlock, { once: true });
+          window.addEventListener("keydown", unlock, { once: true });
+
+          updateMuteButton();
+        }
+
+        function playBgm() {
+          if (!bgmEl || muted) return;
+          const p = bgmEl.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+
+        function stopBgm() {
+          if (!bgmEl) return;
+          bgmEl.pause();
+        }
+
+        function playSfx(key) {
+          if (muted) return;
+          const now = performance.now();
+          const throttle = THROTTLE_MS[key] || 0;
+          if (throttle && lastPlayed[key] && now - lastPlayed[key] < throttle) {
+            return;
+          }
+          lastPlayed[key] = now;
+
+          const pool = sfxPools[key];
+          if (!pool) return;
+          // Cari instance yang sedang tidak dipakai, atau pakai yang paling lama
+          let el = pool.find((a) => a.paused || a.ended);
+          if (!el) el = pool[0];
+          try {
+            el.currentTime = 0;
+            const p = el.play();
+            if (p && p.catch) p.catch(() => {});
+          } catch (e) {
+            // abaikan
+          }
+        }
+
+        function updateMuteButton() {
+          const btn = document.getElementById("muteBtn");
+          if (btn) btn.textContent = muted ? "🔇" : "🔊";
+        }
+
+        function toggleMute() {
+          muted = !muted;
+          localStorage.setItem("ib_muted", muted ? "1" : "0");
+          if (muted) {
+            stopBgm();
+          } else if (unlocked) {
+            playBgm();
+          }
+          updateMuteButton();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+          init();
+          const btn = document.getElementById("muteBtn");
+          if (btn) btn.addEventListener("click", toggleMute);
+        });
+
+        return {
+          playBounce: () => playSfx("bounce"),
+          playCoin: () => playSfx("coin"),
+          playUpgrade: () => playSfx("upgrade"),
+        };
+      })();
+    </script>
+
     <!-- Script Game Original -->
     <script>
       (function () {
@@ -1397,6 +1556,10 @@
           // TAMBAHAN: Panggil visual efek dan beri tanda flash putih pada paddle
           paddle.hitFlash = 1.0;
           spawnParticles(ball.x, ball.y);
+
+          // AUDIO: SFX bola memantul + SFX dapat uang
+          AudioManager.playBounce();
+          AudioManager.playCoin();
         }
 
         function updateBalls() {
@@ -1650,6 +1813,7 @@
           if (trySpend(cost)) {
             availableBalls++;
             ballsBought++;
+            AudioManager.playUpgrade();
             updateUI();
           } else flash(btnAddBall);
         });
@@ -1659,6 +1823,7 @@
           if (trySpend(cost)) {
             ballMultiplier *= 2;
             profitBought++;
+            AudioManager.playUpgrade();
             updateUI();
           } else flash(btnBallProfit);
         });
@@ -1697,6 +1862,7 @@
               hitFlash: 0, // TAMBAHAN: inisialisasi hitFlash untuk paddle baru
             });
             paddlesBought++;
+            AudioManager.playUpgrade();
             updateUI();
           } else flash(btnAddPaddle);
         });
@@ -1726,6 +1892,7 @@
             paddles[i].pos = (paddles[i].pos + paddles[j].pos) / 2;
             paddles.splice(j, 1);
             mergesBought++;
+            AudioManager.playUpgrade();
             updateUI();
           } else flash(btnMerge);
         });
@@ -1766,6 +1933,10 @@
               {
                 type: "added",
                 text: "PWA Support",
+              },
+              {
+                type: "added",
+                text: "Music & Sfx",
               },
               {
                 type: "issue",
