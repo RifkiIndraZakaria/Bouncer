@@ -2176,9 +2176,7 @@
           document.getElementById("priceMaxBallStay").textContent =
             fmtMoney(costMaxBallStay());
           document.getElementById("maxBallStayDesc").textContent =
-            "Currently: " +
-            maxBallStay +
-            " balls can stay permanently on the board";
+            "Currently: " + maxBallStay + " balls can stay";
 
           setAfford(btnAddBall, money >= costAddBall());
           setAfford(btnBallProfit, money >= costProfit());
