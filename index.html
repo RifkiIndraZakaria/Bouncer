@@ -308,6 +308,85 @@
         margin-left: 4px;
         transition: all 0.15s;
       }
+      /* ---------- save reminder banner ---------- */
+      .save-reminder {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translate(-50%, 140%);
+        width: min(420px, calc(100vw - 24px));
+        background: #14141d;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        padding: 14px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        z-index: 500;
+        opacity: 0;
+        transition:
+          transform 0.35s ease,
+          opacity 0.35s ease;
+        pointer-events: none;
+      }
+      .save-reminder.show {
+        transform: translate(-50%, 0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .save-reminder-icon {
+        font-size: 22px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .save-reminder-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .save-reminder-title {
+        font-weight: 800;
+        font-size: 14px;
+        margin-bottom: 4px;
+        color: var(--text, #fff);
+      }
+      .save-reminder-text {
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--text-dim);
+        margin-bottom: 10px;
+      }
+      .save-reminder-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .save-reminder-btn {
+        border: 1px solid var(--border);
+        background: #1b1b26;
+        color: var(--text-dim);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-size: 12.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .save-reminder-btn:hover {
+        filter: brightness(1.15);
+      }
+      .save-reminder-btn.primary {
+        background: #f2b60c;
+        border-color: #f2b60c;
+        color: #1a1300;
+      }
+      @media (max-width: 480px) {
+        .save-reminder {
+          bottom: 10px;
+          padding: 12px;
+        }
+      }
+
       /* ---------- cloud save & leaderboard ---------- */
       .cloud-status {
         font-size: 12.5px;
@@ -1166,6 +1245,30 @@
               <div class="social-list" id="socialList"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ====================================================
+           PENGINGAT SIMPAN PROGRESS
+           Muncul otomatis setelah 5 menit bermain jika player
+           belum login/daftar akun cloud save.
+      ==================================================== -->
+      <div class="save-reminder" id="saveReminder">
+        <div class="save-reminder-icon">💾</div>
+        <div class="save-reminder-body">
+          <div class="save-reminder-title">Simpan progress kamu!</div>
+          <div class="save-reminder-text">
+            Kamu belum login. Progress hanya tersimpan di perangkat ini dan bisa
+            hilang. Daftar / masuk akun sekarang agar progress aman.
+          </div>
+        </div>
+        <div class="save-reminder-actions">
+          <button id="saveReminderLoginBtn" class="save-reminder-btn primary">
+            Simpan Sekarang
+          </button>
+          <button id="saveReminderDismissBtn" class="save-reminder-btn">
+            Nanti
+          </button>
         </div>
       </div>
     </div>
@@ -2623,6 +2726,58 @@
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "hidden") saveLocal();
         });
+
+        // ====================================================
+        // PENGINGAT SIMPAN PROGRESS (untuk player yang belum login)
+        // Muncul pertama kali setelah 5 menit bermain, lalu diulang
+        // tiap 5 menit berikutnya selama player masih belum login
+        // dan belum menutup pengingat pada sesi ini.
+        // ====================================================
+        (function setupSaveReminder() {
+          const REMINDER_INTERVAL_MS = 5 * 60 * 1000; // 5 menit
+          const reminderEl = document.getElementById("saveReminder");
+          const loginBtn = document.getElementById("saveReminderLoginBtn");
+          const dismissBtn = document.getElementById("saveReminderDismissBtn");
+          if (!reminderEl || !loginBtn || !dismissBtn) return;
+
+          let dismissedThisSession = false;
+          let reminderTimer = null;
+
+          function showReminder() {
+            if (cloudUser || dismissedThisSession) return;
+            reminderEl.classList.add("show");
+          }
+
+          function hideReminder() {
+            reminderEl.classList.remove("show");
+          }
+
+          function scheduleNext() {
+            clearTimeout(reminderTimer);
+            reminderTimer = setTimeout(() => {
+              if (!cloudUser && !dismissedThisSession) {
+                showReminder();
+              }
+              scheduleNext();
+            }, REMINDER_INTERVAL_MS);
+          }
+
+          loginBtn.addEventListener("click", () => {
+            hideReminder();
+            openModal();
+            const cloudTabBtn = document.querySelector(
+              '.tab-btn[data-tab="cloud"]',
+            );
+            if (cloudTabBtn) cloudTabBtn.click();
+          });
+
+          dismissBtn.addEventListener("click", () => {
+            hideReminder();
+            dismissedThisSession = true;
+          });
+
+          scheduleNext();
+        })();
 
         if (sb) {
           sb.auth.getSession().then(async ({ data: { session } }) => {
