@@ -2558,7 +2558,14 @@
           cloudUser = null;
           cloudUsername = "";
           localStorage.removeItem("pb_username");
-          showToast("Berhasil keluar dari akun.");
+          // PERBAIKAN: setelah keluar akun, papan (paddle, upgrade, bola)
+          // di-reset ke kondisi starter, supaya sesi berikutnya (mis. main
+          // sebagai tamu atau login akun lain) tidak melanjutkan progres
+          // akun sebelumnya.
+          lastKnownCloudUpdatedAt = null;
+          resetToStarterState();
+          saveLocal();
+          showToast("Berhasil keluar dari akun. Papan direset ke awal.");
           updateCloudPanel();
         }
 
