@@ -581,7 +581,7 @@
       .tab-panels {
         flex: 1;
         padding: 20px;
-        overflow-y: hidden;
+        overflow-y: auto;
       }
       .tab-panel {
         display: none;
@@ -2801,9 +2801,43 @@
         fetchLeaderboard();
         setInterval(fetchLeaderboard, 30000);
 
+        // ====================================================
+        // GAME LOOP dengan "catch-up" berbasis waktu nyata
+        // ----------------------------------------------------
+        // Sebelumnya loop hanya mengandalkan requestAnimationFrame,
+        // yang di-throttle habis-habisan oleh browser saat tab tidak
+        // aktif (kadang cuma jalan ~1x/detik atau berhenti total).
+        // Karena updatePaddlesAuto()/updateBalls() bergerak dengan
+        // langkah tetap per panggilan (bukan berdasar delta time),
+        // efeknya bola seperti "berhenti" saat pindah tab.
+        //
+        // Solusi: hitung berapa langkah simulasi (STEP_MS) yang
+        // seharusnya terjadi berdasarkan selisih waktu nyata sejak
+        // frame terakhir, lalu jalankan sejumlah itu sekaligus.
+        // Dengan begitu, walau rAF cuma sempat "dipanggil" sesekali
+        // saat tab background, begitu tab aktif lagi (atau bahkan
+        // saat masih di background pada browser yang masih memanggil
+        // rAF secara jarang), state bola langsung "mengejar" seakan
+        // terus berjalan sejak awal — bukan diam di tempat.
+        // ====================================================
+        const STEP_MS = 1000 / 60; // 1 langkah simulasi = 1 frame @60fps
+        const MAX_CATCHUP_MS = 5 * 60 * 1000; // cap 5 menit biar tidak macet kalau tab lama sekali di-background
+        let lastFrameTime = performance.now();
+
         function loop() {
-          updatePaddlesAuto();
-          updateBalls();
+          const now = performance.now();
+          let elapsed = now - lastFrameTime;
+          lastFrameTime = now;
+
+          if (elapsed > MAX_CATCHUP_MS) elapsed = MAX_CATCHUP_MS;
+
+          let steps = Math.round(elapsed / STEP_MS);
+          if (steps < 1) steps = 1; // minimal tetap jalan 1 langkah tiap frame
+
+          for (let i = 0; i < steps; i++) {
+            updatePaddlesAuto();
+            updateBalls();
+          }
           draw();
           if (Math.random() < 0.03) {
             updateUI();
@@ -2811,6 +2845,7 @@
           }
           requestAnimationFrame(loop);
         }
+
         updateUI();
         requestAnimationFrame(loop);
       })();
